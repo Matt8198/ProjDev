@@ -77,15 +77,20 @@ client_socket.close()
 # Fenêtre principale
 win = Tk()
 win.title('Control Interface')
-win.geometry('1200x700')
+largeur = 1200
+hauteur = 700
+win.geometry('' + str(largeur) + 'x' + str(hauteur))
+win.maxsize(largeur, hauteur)
 win.resizable(width=False, height=False)
 
-# Label pour afficher la liste des commandes en attente (historique)
+# Partie commande
 lb_command = LabelFrame(win, bg='blue')
 lb_command.grid(row=1, column=1, padx=150, pady=200)
 sv = StringVar()
+# Label pour afficher la liste des commandes en attente (historique)
 la_hist = Label(lb_command, textvariable=sv, font='Helvetica 12 bold', fg='red', bg='purple', padx=20)
 la_hist.grid(row=1, column=1, rowspan=3)
+
 
 # Flèches pour contrôler
 bu_up = Button(lb_command, text='↑', command = lambda: move_forward('<Up>'))
