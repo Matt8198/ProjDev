@@ -16,19 +16,19 @@ def set_text(e,text):
     e.delete(0,END)
     e.insert(0,text)
 
-def move_forward():
+def move_forward(event):
     "client_socket.send( '\x01' )"
     sv.set(sv.get() + 'Forward\n')
 
-def move_backward():
+def move_backward(event):
     "client_socket.send( '\x03' )"
     sv.set(sv.get() +'Backward\n')
 
-def move_left():
+def move_left(event):
     "client_socket.send( '\x05' )"
     sv.set(sv.get() + 'Left\n')
 
-def move_right():
+def move_right(event):
     "client_socket.send( '\x07' )"
     sv.set(sv.get() + 'Right\n')
 
@@ -80,13 +80,13 @@ lb_command.grid(row=1, column=1, padx=5)
 sv = StringVar()
 la_hist = Label(lb_command, textvariable=sv, font='Helvetica 12 bold', fg='red', bg='purple', padx=20)
 la_hist.grid(row=1, column=1, rowspan=3)
-bu_up = Button(lb_command, text='↑', command = lambda: move_forward())
+bu_up = Button(lb_command, text='↑', command = lambda: move_forward('<Up>'))
 bu_up.grid(row=2, column=3)
-bu_left = Button(lb_command, text='←', command = lambda: move_left())
+bu_left = Button(lb_command, text='←', command = lambda: move_left('<Left>'))
 bu_left.grid(row=3, column=2)
-bu_down = Button(lb_command, text='↓', command = lambda: move_backward())
+bu_down = Button(lb_command, text='↓', command = lambda: move_backward('<Down>'))
 bu_down.grid(row=3, column=3)
-bu_right = Button(lb_command, text='→', command = lambda: move_right())
+bu_right = Button(lb_command, text='→', command = lambda: move_right('<Right>'))
 bu_right.grid(row=3, column=4)
 
 lb_informa = LabelFrame(win, bg='red')
@@ -103,6 +103,12 @@ en_connect.insert(0, 'beewi mini cooper')
 en_connect.grid(row=1, column=1, padx=5)
 bu_connect = Button(lb_connect, text='Log in', command = lambda: f_connect(en_connect.get()))
 bu_connect.grid(row=1, column=2, padx=5)
+
+# listeners des flèches au clavier
+win.bind('<Left>', move_left)
+win.bind('<Right>', move_right)
+win.bind('<Up>', move_forward)
+win.bind('<Down>', move_backward)
 
 win.mainloop()
 
