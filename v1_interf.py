@@ -6,12 +6,14 @@ from tkinter import *
 from bluetooth import *
 
 _macaddr = None
+_clientSocket = ""
 
 # Forward  ↑ - \x01
 # Backward ↓ - \x03
 # Left     ← - \x05
 # Right    → - \x07
 
+# Fonctions réservées à l'affichage des commandes dans l'historique
 def set_text(e,text):
     e.delete(0,END)
     e.insert(0,text)
@@ -31,6 +33,15 @@ def move_left(event):
 def move_right(event):
     "client_socket.send( '\x07' )"
     sv.set(sv.get() + 'Right\n')
+    
+###########################################################################
+# Fonctions réservées au contrôle de la voiture
+def command(socket):
+    i = 0
+    # Test : avance pendant peu de temps
+    while(i < 100):
+        socket.send( '\x01' )
+        i += 1
 
 ###########################################################################
 # Bluetooth scanning
@@ -50,10 +61,15 @@ def f_connect(name):
             set_text(en_connect, "Connection successful")
         else:
             set_text(en_connect,name + ' not detected')
+    # Transfère la socket dans la fonction de commande
+    command(client_socket)
 
 ###########################################################################
-"""
+
 ###########################################################################
+# TODO : Le client_socket est hors de portée (local à la f_connect())
+# Ces tests sont inutilisables tels quels
+"""
 # Testing
 client_socket.send( '\x01' )
 print("\t\t~ Forward")
@@ -69,7 +85,9 @@ print("\t\t~ Right")
 time.sleep(0.5)
 ###########################################################################
 
-client_socket.close()
+client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
+					   # => Liste de choix des voitures au lieu de saisir !!!
+					   # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
 """
 ###########################################################################
 # Tkinter
@@ -116,7 +134,7 @@ lb_connect.grid(row=2, column=1, padx=5)
 en_connect = Entry(lb_connect)
 en_connect.insert(0, 'beewi mini cooper')
 en_connect.grid(row=1, column=1, padx=5)
-# Récupère le nom de la voiture souhaitée
+# Récupère le nom de la voiture souhaitée et se connecte
 bu_connect = Button(lb_connect, text='Log in', command = lambda: f_connect(en_connect.get()))
 bu_connect.grid(row=1, column=2, padx=5)
 
