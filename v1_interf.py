@@ -13,40 +13,77 @@ _clientSocket = ""
 # Left     ← - \x05
 # Right    → - \x07
 
-# Fonctions réservées à l'affichage des commandes dans l'historique
+# Fonction réservée à l'affichage des commandes dans l'historique
 def set_text(e,text):
     e.delete(0,END)
     e.insert(0,text)
 
+# Les fonctions "move_...()" orientent la voiture selon la direction souhaitée
 def move_forward(event):
-    "client_socket.send( '\x01' )"
+    client_socket.send('\x01')
     sv.set(sv.get() + 'Forward\n')
 
 def move_backward(event):
-    "client_socket.send( '\x03' )"
+    client_socket.send('\x03')
     sv.set(sv.get() +'Backward\n')
 
 def move_left(event):
-    "client_socket.send( '\x05' )"
+    client_socket.send('\x05')
     sv.set(sv.get() + 'Left\n')
 
 def move_right(event):
-    "client_socket.send( '\x07' )"
+    client_socket.send('\x07')
     sv.set(sv.get() + 'Right\n')
-    
-###########################################################################
-# Fonctions réservées au contrôle de la voiture
-def command(socket):
-    i = 0
-    # Test : avance pendant peu de temps
-    while(i < 100):
-        socket.send( '\x01' )
-        i += 1
+
+# TODO Centraliser dans une seule fonction move() ?
+# Les évènements reçus pour les clics(boutons ou les flèches) sont différents
+def move_arrows(event):
+    # Commander la voiture avec les flèches
+    if event.keysym == 'Up' :
+        move_forward(event)
+    elif event.keysym == 'Down' :
+        move_backward(event)
+    elif event.keysym == 'Left' :
+        move_left(event)
+    else :
+        move_right(event)
+
+# Deplacement avec les boutons de l'interface graphique
+def move_buttons(event):
+    if event == 'Up' :
+        move_forward(event)
+    elif event == 'Down' :
+        move_backward(event)
+    elif event == 'Left' :
+        move_left(event)
+    else :
+        move_right(event)
 
 ###########################################################################
 # Bluetooth scanning
-def f_connect(name):
+print("Pour cette version, la connexion bluetooth est nécessaire !")
+print('Start scanning')
+res = discover_devices(lookup_names=True)
+name = "beewi mini cooper"
+for _mac, _name in res:
+    # Scanne la voiture dont le nom est la valeur du paramètre
+    # Exemple : beewi mini cooper
+    if (_name.lower().startswith(name)):
+        _macaddr = _mac
+        print(_name + " detected")
+        
+        # TODO Gérer portée de la socket en dehors de la fonction
+        # Transfère la socket dans la fonction de commande
+        # command(client_socket)
 
+
+client_socket = BluetoothSocket( RFCOMM )
+res = client_socket.connect((_macaddr, 1))
+print("Connection successful")
+            
+# TODO Gérer portée de la socket en dehors de la fonction
+"""
+def f_connect(name):
     set_text(en_connect,'Start scanning')
     res = discover_devices(lookup_names=True)
 
@@ -58,17 +95,17 @@ def f_connect(name):
             set_text(en_connect, name + ' detected')
             client_socket = BluetoothSocket( RFCOMM )
             res = client_socket.connect((_macaddr, 1))
+            # Transfère la socket dans la fonction de commande
+            command(client_socket)
             set_text(en_connect, "Connection successful")
         else:
             set_text(en_connect,name + ' not detected')
-    # Transfère la socket dans la fonction de commande
-    command(client_socket)
-
+"""
 ###########################################################################
 
 ###########################################################################
 # TODO : Le client_socket est hors de portée (local à la f_connect())
-# Ces tests sont inutilisables tels quels
+# Ces tests sont inutilisables avec la fonction f_connect() de la V1
 """
 # Testing
 client_socket.send( '\x01' )
@@ -111,13 +148,13 @@ la_hist.grid(row=1, column=1, rowspan=3)
 
 
 # Flèches pour contrôler
-bu_up = Button(lb_command, text='↑', command = lambda: move_forward('<Up>'))
+bu_up = Button(lb_command, text='↑', command = lambda: move_buttons('Up'))
 bu_up.grid(row=2, column=3)
-bu_left = Button(lb_command, text='←', command = lambda: move_left('<Left>'))
+bu_left = Button(lb_command, text='←', command = lambda: move_buttons('Left'))
 bu_left.grid(row=3, column=2)
-bu_down = Button(lb_command, text='↓', command = lambda: move_backward('<Down>'))
+bu_down = Button(lb_command, text='↓', command = lambda: move_buttons('Down'))
 bu_down.grid(row=3, column=3)
-bu_right = Button(lb_command, text='→', command = lambda: move_right('<Right>'))
+bu_right = Button(lb_command, text='→', command = lambda: move_buttons('Right'))
 bu_right.grid(row=3, column=4)
 
 # Label pour la liste des commandes
@@ -139,10 +176,10 @@ bu_connect = Button(lb_connect, text='Log in', command = lambda: f_connect(en_co
 bu_connect.grid(row=1, column=2, padx=5)
 
 # listeners des flèches au clavier
-win.bind('<Left>', move_left)
-win.bind('<Right>', move_right)
-win.bind('<Up>', move_forward)
-win.bind('<Down>', move_backward)
+win.bind('<Left>',  move_arrows)
+win.bind('<Right>', move_arrows)
+win.bind('<Up>',    move_arrows)
+win.bind('<Down>',  move_arrows)
 
 # affichage de l'interface
 win.mainloop()
