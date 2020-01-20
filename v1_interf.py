@@ -6,7 +6,7 @@ from tkinter import *
 from bluetooth import *
 
 _macaddr = None
-_clientSocket = ""
+client_socket = BluetoothSocket( RFCOMM )
 
 # Forward  ↑ - \x01
 # Backward ↓ - \x03
@@ -61,28 +61,6 @@ def move_buttons(event):
 
 ###########################################################################
 # Bluetooth scanning
-print("Pour cette version, la connexion bluetooth est nécessaire !")
-print('Start scanning')
-res = discover_devices(lookup_names=True)
-name = "beewi mini cooper"
-for _mac, _name in res:
-    # Scanne la voiture dont le nom est la valeur du paramètre
-    # Exemple : beewi mini cooper
-    if (_name.lower().startswith(name)):
-        _macaddr = _mac
-        print(_name + " detected")
-        
-        # TODO Gérer portée de la socket en dehors de la fonction
-        # Transfère la socket dans la fonction de commande
-        # command(client_socket)
-
-
-client_socket = BluetoothSocket( RFCOMM )
-res = client_socket.connect((_macaddr, 1))
-print("Connection successful")
-            
-# TODO Gérer portée de la socket en dehors de la fonction
-"""
 def f_connect(name):
     set_text(en_connect,'Start scanning')
     res = discover_devices(lookup_names=True)
@@ -93,35 +71,12 @@ def f_connect(name):
         if (_name.lower().startswith(name)):
             _macaddr = _mac
             set_text(en_connect, name + ' detected')
-            client_socket = BluetoothSocket( RFCOMM )
             res = client_socket.connect((_macaddr, 1))
-            # Transfère la socket dans la fonction de commande
-            command(client_socket)
             set_text(en_connect, "Connection successful")
         else:
             set_text(en_connect,name + ' not detected')
+###########################################################################
 """
-###########################################################################
-
-###########################################################################
-# TODO : Le client_socket est hors de portée (local à la f_connect())
-# Ces tests sont inutilisables avec la fonction f_connect() de la V1
-"""
-# Testing
-client_socket.send( '\x01' )
-print("\t\t~ Forward")
-time.sleep(0.5)
-client_socket.send( '\x03' )
-print("\t\t~ Backward")
-time.sleep(0.5)
-client_socket.send( '\x05' )
-print("\t\t~ Left")
-time.sleep(0.5)
-client_socket.send( '\x07' )
-print("\t\t~ Right")
-time.sleep(0.5)
-###########################################################################
-
 client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
 					   # => Liste de choix des voitures au lieu de saisir !!!
 					   # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
