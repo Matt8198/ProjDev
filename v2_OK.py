@@ -1,3 +1,4 @@
+
 import os
 import sys
 import time
@@ -5,7 +6,7 @@ from tkinter import *
 import tkinter.ttk as ttk 
 from bluetooth import *
 
-_macaddr = None
+# Socket pour 1 connexion bluetooth
 client_socket = BluetoothSocket( RFCOMM )
 
 # Forward  ↑ - \x01
@@ -13,68 +14,102 @@ client_socket = BluetoothSocket( RFCOMM )
 # Left     ← - \x05
 # Right    → - \x07
 
-# Fonction réservée à l'affichage des commandes dans l'historique
-def set_text(e,text):
-    e.delete(0,END)
-    e.insert(0,text)
-
 # Les fonctions "move_...()" orientent la voiture selon la direction souhaitée
 def move_forward(event):
-    client_socket.send('\x01')
-    sv.set('Forward\n' + sv.get())
-
+    try:
+        client_socket.send('\x01')
+        sv.set('Forward\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+        
 def move_backward(event):
-    client_socket.send('\x03')
-    sv.set('Backward\n' + sv.get())
-
+    try:
+        client_socket.send('\x03')
+        sv.set('Backward\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+        
 def move_left(event):
-    client_socket.send('\x05')
-    sv.set('Left\n' + sv.get())
-
+    try:
+        client_socket.send('\x05')
+        sv.set('Left\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+        
 def move_right(event):
-    client_socket.send('\x07')
-    sv.set('Right\n' + sv.get())
+    try:
+        client_socket.send('\x07')
+        sv.set('Right\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
 
-# TODO Centraliser dans une seule fonction move() ?
 # Les évènements reçus pour les clics(boutons ou les flèches) sont différents
 def move_arrows(event):
     # Commander la voiture avec les flèches
-    if event.keysym == 'Up' :
-        move_forward(event)
-    elif event.keysym == 'Down' :
-        move_backward(event)
-    elif event.keysym == 'Left' :
-        move_left(event)
-    else :
-        move_right(event)
+    try :
+        if event.keysym == 'Up' :
+            move_forward(event)
+        elif event.keysym == 'Down' :
+            move_backward(event)
+        elif event.keysym == 'Left' :
+            move_left(event)
+        else :
+            move_right(event)
+    except OSError :
+        text_state_car.set("You can't control nothing !")
 
 # Deplacement avec les boutons de l'interface graphique
 def move_buttons(event):
-    if event == 'Up' :
-        move_forward(event)
-    elif event == 'Down' :
-        move_backward(event)
-    elif event == 'Left' :
-        move_left(event)
-    else :
-        move_right(event)
+    try:
+        if event == 'Up' :
+            move_forward(event)
+        elif event == 'Down' :
+            move_backward(event)
+        elif event == 'Left' :
+            move_left(event)
+        else :
+            move_right(event)
+    except OSError :
+        text_state_car.set("You can't control nothing !")
 
 ###########################################################################
 # Bluetooth scanning
-def f_connect(name):
-    set_text(en_connect,'Start scanning')
-    res = discover_devices(lookup_names=True)
+appareilsDispo = []
+def f_scan():
+    # TODO gérer si le Bluetooth est désactivé !
+    text_state_car.set('Start scanning')
+    appareilsDetectes = discover_devices(lookup_names=True, duration=8,
+                                         flush_cache=True, lookup_class=False)
+    # Liste des appareils proches
+    appareilsDispo.clear()
+    for _mac, _name in appareilsDetectes:
+        # Filtre seulement les appareils "beewi"
+        if "beewi" in _name.lower():
+            print(_mac, " ", _name)
+            print("_name = ", _name)
+            appareilsDispo.append((_mac, _name))
 
-    for _mac, _name in res:
-        # Scanne la voiture dont le nom est la valeur du paramètre
-        # Exemple : beewi mini cooper
-        if (_name.lower().startswith(name)):
-            _macaddr = _mac
-            set_text(en_connect, name + ' detected')
-            res = client_socket.connect((_macaddr, 1))
-            set_text(en_connect, "Connection successful")
-        else:
-            set_text(en_connect,name + ' not detected')
+    # Met à jour la liste des véhicules disponibles
+    choix_voitures['values'] = [appareil[1] for appareil in appareilsDispo]
+    # Maintenant on peut selectionner une voiture :
+    choix_voitures['state'] = "enabled"
+    btn_connect['state'] = NORMAL
+
+# Bluetooth connection   
+def f_connect():
+    selectedCar = choix_voitures.current()
+    car = appareilsDispo[selectedCar]
+    text_state_car.set(car[1] +' detected')
+    # Connexion à la voiture
+    # TODO : Gérer @mac pour plusieurs voitures
+    _macaddr = car[0]
+    try :
+        client_socket.connect((_macaddr, 1))
+        text_state_car.set("Connection successful")
+    except OSError:
+        # Gère une erreur de connexion
+        text_state_car.set("Connection ERROR ! Device is not ON/available")
+
 ###########################################################################
 """
 client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
@@ -83,8 +118,6 @@ client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection success
 """
 ###########################################################################
 # Tkinter
-
-
 root = Tk()
 root.title('Control Interface')
 largeur = 650
@@ -178,37 +211,31 @@ bot = Label(root, height = 200, width=600, background="gray7")
 bot.pack(anchor="s", fill=X)
 
 #Variable texte pour état voiture
-"""
 text_state_car = StringVar()
 text_state_car.set("Etat de la voiture")
-"""
 lb_connect = LabelFrame(root, bg='green')
 lb_connect.pack(anchor="w",side = LEFT, padx=20,pady=10)
-en_connect = Entry(lb_connect)
-en_connect.insert(0, "Etat de la voiture")
-en_connect.pack()
 
-""" TODO """
 # Label état voiture connectée
-#state_car=Label(bot,height = 30,textvariable=text_state_car, width=40,fg='red', bg='steel blue',anchor=W)
-#state_car.pack(anchor="w",side = LEFT, padx=20,pady=10)
-
-
+state_car=Label(bot,height = 30,textvariable=text_state_car, width=40,fg='red', bg='steel blue',anchor=W)
+state_car.pack(anchor="w",side = LEFT, padx=20,pady=10)
 
 #Frame pour stocker liste deroulante des voitures et bouton login
 frame_connexion=Frame(bot,height = 150, width=250, background="steel blue")
 frame_connexion.pack(anchor="e",side = RIGHT, padx=20,pady=10)
 
-#liste voitures
-voitures=["beewi mini cooper","beewi fiat 500"]
+#liste deroulante pour le choix de la voiture à connecter
+choix_voitures = ttk.Combobox(frame_connexion, values=[],
+                              state="disabled")  # readonly au départ car aucune voiture n'a été détéctée pour le moment
+choix_voitures.pack(side=LEFT,padx=5)
 
-#liste deroulante
-choix_voitures = ttk.Combobox(frame_connexion, values=voitures)
-choix_voitures.pack (side=LEFT,padx=5)
+# Connexion à une voiture une fois séléctionnée
+btn_connect = Button(frame_connexion, text='Connect', command = lambda: f_connect(), state=DISABLED)
+btn_connect.pack(side=RIGHT, padx=5)
 
-# Récupère le nom de la voiture souhaitée
-login = Button(frame_connexion, text='Log in', command = lambda: f_connect(choix_voitures.get()))
-login.pack(side=RIGHT, padx=5)
+# Scan des appareils "beewi" bluetooth proches
+scan = Button(frame_connexion, text='BT Scan', command = lambda: f_scan())
+scan.pack(side=RIGHT, padx=5)
 
 #Fin bot--------------------------------------------------------------------------------
 
