@@ -97,18 +97,24 @@ def f_scan():
 
 # Bluetooth connection   
 def f_connect():
+    car = []
     selectedCar = choix_voitures.current()
-    car = appareilsDispo[selectedCar]
-    text_state_car.set(car[1] +' detected')
-    # Connexion à la voiture
-    # TODO : Gérer @mac pour plusieurs voitures
-    _macaddr = car[0]
     try :
-        client_socket.connect((_macaddr, 1))
-        text_state_car.set("Connection successful")
-    except OSError:
-        # Gère une erreur de connexion
-        text_state_car.set("Connection ERROR ! Device is not ON/available")
+        car = appareilsDispo[selectedCar]
+        # Connexion à la voiture
+        # TODO : Gérer @mac pour plusieurs voitures
+        _macaddr = car[0]
+    except IndexError:  # outofbounds
+        text_state_car.set('Please enable Bluetooth on your laptop !')
+
+    if (car != []):
+        text_state_car.set(car[1] +' detected')
+        try :
+            client_socket.connect((_macaddr, 1))
+            text_state_car.set("Connection successful")
+        except OSError:
+            # Gère une erreur de connexion
+            text_state_car.set("Connection ERROR ! Device is not ON/available")
 
 ###########################################################################
 """
