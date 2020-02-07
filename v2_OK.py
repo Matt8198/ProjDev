@@ -49,16 +49,18 @@ def move_backward(event):
     except OSError :
         text_state_car.set("You are not connected !")
         
-def move_left(event):
+def forward_to_left(event):
     try:
-        client_socket.send('\x05')
+        client_socket.send('\x05')  # Tourne à gauche
+        client_socket.send('\x01')  # Avance
         sv.set('Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
         
-def move_right(event):
+def forward_to_right(event):
     try:
-        client_socket.send('\x07')
+        client_socket.send('\x07')  # Tourne à droite
+        client_socket.send('\x01')  # Avance
         sv.set('Right\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
@@ -72,9 +74,9 @@ def move_arrows(event):
         elif event.keysym == 'Down' :
             move_backward(event)
         elif event.keysym == 'Left' :
-            move_left(event)
+            forward_to_left(event)
         else :
-            move_right(event)
+            forward_to_right(event)
     except OSError :
         text_state_car.set("You can't control nothing !")
 
@@ -86,9 +88,9 @@ def move_buttons(event):
         elif event == 'Down' :
             move_backward(event)
         elif event == 'Left' :
-            move_left(event)
+            forward_to_left(event)
         else :
-            move_right(event)
+            forward_to_right(event)
     except OSError :
         text_state_car.set("You can't control nothing !")
 
@@ -98,7 +100,7 @@ appareilsDispo = []
 def f_scan():
     # TODO gérer si le Bluetooth est désactivé !
     text_state_car.set('Start scanning')
-    appareilsDetectes = discover_devices(lookup_names=True, duration=8,
+    appareilsDetectes = discover_devices(lookup_names=True, duration=4,
                                          flush_cache=True, lookup_class=False)
     # Liste des appareils proches
     appareilsDispo.clear()
@@ -205,11 +207,11 @@ frame_fleches.pack(anchor="center",side = LEFT, padx=60)
 #Fleches
 fleche_haut = Button(frame_fleches, text='↑', command = lambda: move_forward('<Up>'), width=3 , height= 3)
 fleche_haut.pack(side=TOP)
-fleche_gauche = Button(frame_fleches, text='←', command = lambda: move_left('<Left>'), width=3 , height= 3)
+fleche_gauche = Button(frame_fleches, text='←', command = lambda: forward_to_left('<Left>'), width=3 , height= 3)
 fleche_gauche.pack(side=LEFT)
 fleche_bas = Button(frame_fleches, text='↓', command = lambda: move_backward('<Down>'), width=3 , height= 3)
 fleche_bas.pack(side=LEFT)
-fleche_droite = Button(frame_fleches, text='→', command = lambda: move_right('<Right>'), width=3 , height= 3)
+fleche_droite = Button(frame_fleches, text='→', command = lambda: forward_to_right('<Right>'), width=3 , height= 3)
 fleche_droite.pack(side=LEFT)
 
 
@@ -267,8 +269,8 @@ scan.pack(side=RIGHT, padx=5)
 #Fin bot--------------------------------------------------------------------------------
 
 # listeners des flèches au clavier
-root.bind('<Left>', move_left)
-root.bind('<Right>', move_right)
+root.bind('<Left>', forward_to_left)
+root.bind('<Right>', forward_to_right)
 root.bind('<Up>', move_forward)
 root.bind('<Down>', move_backward)
 
