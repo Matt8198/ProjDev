@@ -9,22 +9,42 @@ from bluetooth import *
 # Socket pour 1 connexion bluetooth
 client_socket = BluetoothSocket( RFCOMM )
 
+# STOP Forward  ↑ - \x00
 # Forward  ↑ - \x01
+# STOP Backward ↓ - \x02
 # Backward ↓ - \x03
-# Left     ← - \x05
-# Right    → - \x07
+# STOP Left ← - \x04
+# Left      ← - \x05
+# STOP Right→ - \x06
+# Right     → - \x07
+
+# Repositionne les roues droites
+def reset_wheels():
+    client_socket.send('\x04')  # STOP Left
+    client_socket.send('\x06')  # STOP Right
+
+# Les fonctions "stop_...()" stoppent d'abord les autres mouvements avant de faire l'action souhaitée
+def stop_before_backward():
+    reset_wheels()
+    client_socket.send('\x00')  # STOP Forward
+
+def stop_before_forward():
+    reset_wheels()
+    client_socket.send('\x02')  # STOP Backward
 
 # Les fonctions "move_...()" orientent la voiture selon la direction souhaitée
 def move_forward(event):
     try:
-        client_socket.send('\x01')
+        stop_before_forward()  # reset current moves
+        client_socket.send('\x01')  # avance en ligne droite
         sv.set('Forward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
         
 def move_backward(event):
     try:
-        client_socket.send('\x03')
+        stop_before_backward()  # reset current moves
+        client_socket.send('\x03')  # recule en ligne droite
         sv.set('Backward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
@@ -121,6 +141,7 @@ def f_connect():
 client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
 					   # => Liste de choix des voitures au lieu de saisir !!!
 					   # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
+
 """
 ###########################################################################
 # Tkinter
