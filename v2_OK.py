@@ -1,4 +1,3 @@
-
 import os
 import sys
 import time
@@ -143,12 +142,12 @@ def f_connect():
             # Gère une erreur de connexion
             text_state_car.set("Connection ERROR ! Device is not ON/available")
 
+
 ###########################################################################
 """
 client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
-					   # => Liste de choix des voitures au lieu de saisir !!!
-					   # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
-
+                       # => Liste de choix des voitures au lieu de saisir !!!
+                       # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
 """
 ###########################################################################
 # Tkinter
@@ -166,10 +165,26 @@ root.resizable(width=False, height=False)
 top = Label(root, bg="gray7")
 top.pack(anchor="n",fill=X)
 
-#Affichage Logo
-photo = PhotoImage(file = "Vroum2.png")
-logo = Label(top, image= photo, bg="gray7")
-logo.pack(anchor="nw", side=LEFT)
+#Label pour logos
+logos = Label(top, bg="gray7")
+logos.pack(anchor="w",side=LEFT,fill=Y)
+
+#Label pour neocampus et bluetooth logo
+blue_neo = Label(logos, bg="gray7")
+blue_neo.pack(anchor="e",side=TOP,fill=X)
+
+#Affichage Logos
+photo_bluetooth = PhotoImage(file = "Vroum2.png")
+logo_bluetooth = Label(blue_neo, image= photo_bluetooth, bg="gray7")
+logo_bluetooth.pack(side=LEFT)
+
+photo_neo = PhotoImage(file = "neocampus.png")
+logo_neo = Label(blue_neo, image= photo_neo, bg="gray7")
+logo_neo.pack(side=LEFT)
+
+photo_ps = PhotoImage(file = "paulsab.png")
+logo_ps = Label(logos, image= photo_ps, bg="gray7")
+logo_ps.pack(anchor="nw",side=LEFT,padx=10)
 
 #Frame pour liste de commandes
 frame_liste_commandes = Frame(top, height = 100, width=120, background="steel blue")
@@ -209,20 +224,32 @@ historique.pack(anchor="w",padx=20, side= LEFT)
 frame_fleches = Frame(mid,height = 150, width=200, background="gray7")
 frame_fleches.pack(anchor="center",side = LEFT, padx=60)
 
-# Boutons de contrôle de l'interface graphique
-fleche_back_gauche = Button(frame_fleches, text='←|', command = lambda: backward_to_left(), width=3 , height= 3)
-fleche_back_gauche.pack(side=RIGHT)
-fleche_haut = Button(frame_fleches, text='↑', command = lambda: move_forward(), width=3 , height= 3)
-fleche_haut.pack(side=TOP)
-fleche_back_droite = Button(frame_fleches, text='|→', command = lambda: backward_to_right(), width=3 , height= 3)
-fleche_back_droite.pack(side=RIGHT)
+#Frame pour stocker fleches marche avant
+fleches_avance = Frame(frame_fleches,height = 150, width=100)
+fleches_avance.pack(anchor="center",side = TOP)
 
-fleche_gauche = Button(frame_fleches, text='←', command = lambda: forward_to_left(), width=3 , height= 3)
+#Frame pour stocker fleches marche arriere
+fleches_arriere = Frame(frame_fleches,height = 150, width=100)
+fleches_arriere.pack(anchor="center",side = TOP)
+
+# Boutons de contrôle de l'interface graphique
+
+fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(), width=3 , height= 3)
 fleche_gauche.pack(side=LEFT)
-fleche_bas = Button(frame_fleches, text='↓', command = lambda: move_backward(), width=3 , height= 3)
-fleche_bas.pack(side=LEFT)
-fleche_droite = Button(frame_fleches, text='→', command = lambda: forward_to_right(), width=3 , height= 3)
+fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(), width=3 , height= 3)
+fleche_haut.pack(side=LEFT)
+fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(), width=3 , height= 3)
 fleche_droite.pack(side=LEFT)
+
+
+
+fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(), width=3 , height= 3)
+fleche_back_gauche.pack(side=LEFT)
+fleche_bas = Button(fleches_arriere, text='↓', command = lambda: move_backward(), width=3 , height= 3)
+fleche_bas.pack(side=LEFT)
+fleche_back_droite = Button(fleches_arriere, text='|→', command = lambda: backward_to_right(), width=3 , height= 3)
+fleche_back_droite.pack(side=LEFT)
+
 
 #Frame pour stocker les boutons de démos
 frame_demos=Frame(mid,height = 150, width=180, background="steel blue")
