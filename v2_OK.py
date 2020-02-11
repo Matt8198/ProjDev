@@ -7,7 +7,17 @@ import tkinter.ttk as ttk
 from bluetooth import *
 
 # Socket pour 1 connexion bluetooth
-client_socket = BluetoothSocket( RFCOMM )
+waitForBluetooth = True
+while waitForBluetooth :
+    try :
+        client_socket = BluetoothSocket( RFCOMM )
+        client_socket.bind(("", PORT_ANY))  # TODO une deuxième, tester en simultané
+        waitForBluetooth = False
+        # nbConnections à MAJ en fct du nb de clics sur Connect ?
+    except OSError :
+        print("Votre Bluetooth n'est pas activé !")
+        waitForBluetooth = True
+        time.sleep(5)
 
 # STOP Forward  ↑ - \x00
 # Forward  ↑ - \x01
@@ -32,8 +42,16 @@ def stop_before_forward():
     reset_wheels()
     client_socket.send('\x02')  # STOP Backward
 
-# Les fonctions "move_...()" orientent la voiture selon la direction souhaitée
-def move_forward(event):
+"""
+Bind des touches :
+    A : Reculer et tourner à gauche
+    E : Reculer et tourner à droite
+    Z : Avancer en ligne droite
+    S : Reculer en ligne droite
+    Q : Avancer et tourner à gauche
+    D : Avancer et tourner à droite
+"""
+def move_forward():
     try:
         stop_before_forward()  # reset current moves
         client_socket.send('\x01')  # avance en ligne droite
@@ -41,7 +59,7 @@ def move_forward(event):
     except OSError :
         text_state_car.set("You are not connected !")
         
-def move_backward(event):
+def move_backward():
     try:
         stop_before_backward()  # reset current moves
         client_socket.send('\x03')  # recule en ligne droite
@@ -49,50 +67,37 @@ def move_backward(event):
     except OSError :
         text_state_car.set("You are not connected !")
         
-def forward_to_left(event):
+def forward_to_left():
     try:
         client_socket.send('\x05')  # Tourne à gauche
         client_socket.send('\x01')  # Avance
-        sv.set('Left\n' + sv.get())
+        sv.set('Forward Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
         
-def forward_to_right(event):
+def forward_to_right():
     try:
         client_socket.send('\x07')  # Tourne à droite
         client_socket.send('\x01')  # Avance
-        sv.set('Right\n' + sv.get())
+        sv.set('Forward Right\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
 
-# Les évènements reçus pour les clics(boutons ou les flèches) sont différents
-def move_arrows(event):
-    # Commander la voiture avec les flèches
-    try :
-        if event.keysym == 'Up' :
-            move_forward(event)
-        elif event.keysym == 'Down' :
-            move_backward(event)
-        elif event.keysym == 'Left' :
-            forward_to_left(event)
-        else :
-            forward_to_right(event)
-    except OSError :
-        text_state_car.set("You can't control nothing !")
-
-# Deplacement avec les boutons de l'interface graphique
-def move_buttons(event):
+def backward_to_left():
     try:
-        if event == 'Up' :
-            move_forward(event)
-        elif event == 'Down' :
-            move_backward(event)
-        elif event == 'Left' :
-            forward_to_left(event)
-        else :
-            forward_to_right(event)
+        client_socket.send('\x05')  # Tourne à gauche
+        client_socket.send('\x03')  # Avance
+        sv.set('Backward Left\n' + sv.get())
     except OSError :
-        text_state_car.set("You can't control nothing !")
+        text_state_car.set("You are not connected !")
+        
+def backward_to_right():
+    try:
+        client_socket.send('\x07')  # Tourne à droite
+        client_socket.send('\x03')  # Avance
+        sv.set('Backward Right\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
 
 ###########################################################################
 # Bluetooth scanning
@@ -100,8 +105,8 @@ appareilsDispo = []
 def f_scan():
     # TODO gérer si le Bluetooth est désactivé !
     text_state_car.set('Start scanning')
-    appareilsDetectes = discover_devices(lookup_names=True, duration=4,
-                                         flush_cache=True, lookup_class=False)
+    appareilsDetectes = discover_devices(lookup_names=True, duration=3,
+                                         flush_cache=True)
     # Liste des appareils proches
     appareilsDispo.clear()
     for _mac, _name in appareilsDetectes:
@@ -204,16 +209,20 @@ historique.pack(anchor="w",padx=20, side= LEFT)
 frame_fleches = Frame(mid,height = 150, width=200, background="gray7")
 frame_fleches.pack(anchor="center",side = LEFT, padx=60)
 
-#Fleches
-fleche_haut = Button(frame_fleches, text='↑', command = lambda: move_forward('<Up>'), width=3 , height= 3)
+# Boutons de contrôle de l'interface graphique
+fleche_back_gauche = Button(frame_fleches, text='←|', command = lambda: backward_to_left(), width=3 , height= 3)
+fleche_back_gauche.pack(side=RIGHT)
+fleche_haut = Button(frame_fleches, text='↑', command = lambda: move_forward(), width=3 , height= 3)
 fleche_haut.pack(side=TOP)
-fleche_gauche = Button(frame_fleches, text='←', command = lambda: forward_to_left('<Left>'), width=3 , height= 3)
-fleche_gauche.pack(side=LEFT)
-fleche_bas = Button(frame_fleches, text='↓', command = lambda: move_backward('<Down>'), width=3 , height= 3)
-fleche_bas.pack(side=LEFT)
-fleche_droite = Button(frame_fleches, text='→', command = lambda: forward_to_right('<Right>'), width=3 , height= 3)
-fleche_droite.pack(side=LEFT)
+fleche_back_droite = Button(frame_fleches, text='|→', command = lambda: backward_to_right(), width=3 , height= 3)
+fleche_back_droite.pack(side=RIGHT)
 
+fleche_gauche = Button(frame_fleches, text='←', command = lambda: forward_to_left(), width=3 , height= 3)
+fleche_gauche.pack(side=LEFT)
+fleche_bas = Button(frame_fleches, text='↓', command = lambda: move_backward(), width=3 , height= 3)
+fleche_bas.pack(side=LEFT)
+fleche_droite = Button(frame_fleches, text='→', command = lambda: forward_to_right(), width=3 , height= 3)
+fleche_droite.pack(side=LEFT)
 
 #Frame pour stocker les boutons de démos
 frame_demos=Frame(mid,height = 150, width=180, background="steel blue")
@@ -269,10 +278,12 @@ scan.pack(side=RIGHT, padx=5)
 #Fin bot--------------------------------------------------------------------------------
 
 # listeners des flèches au clavier
-root.bind('<Left>', forward_to_left)
-root.bind('<Right>', forward_to_right)
-root.bind('<Up>', move_forward)
-root.bind('<Down>', move_backward)
+root.bind('<a>', forward_to_left)
+root.bind('<e>', forward_to_right)
+root.bind('<q>', forward_to_right)
+root.bind('<d>', forward_to_right)
+root.bind('<z>', move_forward)
+root.bind('<s>', move_backward)
 
 # affichage de l'interface
 mainloop()
