@@ -50,7 +50,7 @@ Bind des touches :
     Q : Avancer et tourner à gauche
     D : Avancer et tourner à droite
 """
-def move_forward():
+def move_forward(event):
     try:
         stop_before_forward()  # reset current moves
         client_socket.send('\x01')  # avance en ligne droite
@@ -58,7 +58,7 @@ def move_forward():
     except OSError :
         text_state_car.set("You are not connected !")
         
-def move_backward():
+def move_backward(event):
     try:
         stop_before_backward()  # reset current moves
         client_socket.send('\x03')  # recule en ligne droite
@@ -66,7 +66,7 @@ def move_backward():
     except OSError :
         text_state_car.set("You are not connected !")
         
-def forward_to_left():
+def forward_to_left(event):
     try:
         client_socket.send('\x05')  # Tourne à gauche
         client_socket.send('\x01')  # Avance
@@ -74,7 +74,7 @@ def forward_to_left():
     except OSError :
         text_state_car.set("You are not connected !")
         
-def forward_to_right():
+def forward_to_right(event):
     try:
         client_socket.send('\x07')  # Tourne à droite
         client_socket.send('\x01')  # Avance
@@ -82,7 +82,7 @@ def forward_to_right():
     except OSError :
         text_state_car.set("You are not connected !")
 
-def backward_to_left():
+def backward_to_left(event):
     try:
         client_socket.send('\x05')  # Tourne à gauche
         client_socket.send('\x03')  # Avance
@@ -90,7 +90,7 @@ def backward_to_left():
     except OSError :
         text_state_car.set("You are not connected !")
         
-def backward_to_right():
+def backward_to_right(event):
     try:
         client_socket.send('\x07')  # Tourne à droite
         client_socket.send('\x03')  # Avance
@@ -234,20 +234,20 @@ fleches_arriere.pack(anchor="center",side = TOP)
 
 # Boutons de contrôle de l'interface graphique
 
-fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(), width=3 , height= 3)
+fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(''), width=3 , height= 3)
 fleche_gauche.pack(side=LEFT)
-fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(), width=3 , height= 3)
+fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(''), width=3 , height= 3)
 fleche_haut.pack(side=LEFT)
-fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(), width=3 , height= 3)
+fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(''), width=3 , height= 3)
 fleche_droite.pack(side=LEFT)
 
 
 
-fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(), width=3 , height= 3)
+fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(''), width=3 , height= 3)
 fleche_back_gauche.pack(side=LEFT)
-fleche_bas = Button(fleches_arriere, text='↓', command = lambda: move_backward(), width=3 , height= 3)
+fleche_bas = Button(fleches_arriere, text='↓', command = lambda: move_backward(''), width=3 , height= 3)
 fleche_bas.pack(side=LEFT)
-fleche_back_droite = Button(fleches_arriere, text='|→', command = lambda: backward_to_right(), width=3 , height= 3)
+fleche_back_droite = Button(fleches_arriere, text='|→', command = lambda: backward_to_right(''), width=3 , height= 3)
 fleche_back_droite.pack(side=LEFT)
 
 
@@ -307,8 +307,8 @@ scan.pack(side=RIGHT, padx=5)
 # listeners des flèches au clavier
 root.bind('<a>', forward_to_left)
 root.bind('<e>', forward_to_right)
-root.bind('<q>', forward_to_right)
-root.bind('<d>', forward_to_right)
+root.bind('<q>', backward_to_left)
+root.bind('<d>', backward_to_right)
 root.bind('<z>', move_forward)
 root.bind('<s>', move_backward)
 
