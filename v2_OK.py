@@ -101,7 +101,6 @@ def f_connect():
 
 ###########################################################################
 ###########################################################################
-
 """
     - STOP Forward  - \x00
     - Forward       - \x01
@@ -115,17 +114,29 @@ def f_connect():
 
 # Repositionne les roues droites
 def reset_wheels(selectedCar):
-    appareils_connectes[selectedCar].send('\x04')  # STOP Left
-    appareils_connectes[selectedCar].send('\x06')  # STOP Right
-
-# Les fonctions "stop_...()" stoppent d'abord les autres mouvements avant de faire l'action souhaitée
+    try:
+        appareils_connectes[selectedCar].send('\x04')  # STOP Left
+        appareils_connectes[selectedCar].send('\x06')  # STOP Right
+    except OSError :
+        text_state_car.set("You are not connected !")
+        
+"""
+    Les fonctions "stop_...()" arrêtent d'abord les autres mouvements
+    AVANT de faire l'action souhaitée
+"""
 def stop_before_backward(selectedCar):
     reset_wheels(selectedCar)
-    appareils_connectes[selectedCar].send('\x00')  # STOP Forward
+    try:
+        appareils_connectes[selectedCar].send('\x00')  # STOP Forward
+    except OSError :
+        text_state_car.set("You are not connected !")
 
 def stop_before_forward(selectedCar):
     reset_wheels(selectedCar)
-    appareils_connectes[selectedCar].send('\x02')  # STOP Backward
+    try:
+        appareils_connectes[selectedCar].send('\x02')  # STOP Backward
+    except OSError :
+        text_state_car.set("You are not connected !")
 
 """
 Bind des touches :
@@ -136,24 +147,28 @@ Bind des touches :
     Q : Avancer et tourner à gauche
     D : Avancer et tourner à droite
 """
+###########################################################################
+# Fonctions directement associées aux Listeners sur les touches assignées
 def move_forward(event):
     selectedCar = choix_voitures.current()
-    try:
-        stop_before_forward(selectedCar)  # reset current moves
-        appareils_connectes[selectedCar].send('\x01')  # avance en ligne droite
+    stop_before_forward(selectedCar)  # reset current moves
+    try : 
+        appareils_connectes[selectedCar].send('\x01')  # Avance en ligne droite
         sv.set('Forward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-        
+
 def move_backward(event):
     selectedCar = choix_voitures.current()
+    stop_before_backward(selectedCar)  # reset current moves
     try:
-        stop_before_backward(selectedCar)  # reset current moves
-        appareils_connectes[selectedCar].send('\x03')  # recule en ligne droite
+        appareils_connectes[selectedCar].send('\x03')  # Recule en ligne droite
         sv.set('Backward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-        
+
+# Fonctions de déplacements plus avancées
+# Avance et tourne à gauche simultanément
 def forward_to_left(event):
     selectedCar = choix_voitures.current()
     try:
@@ -162,7 +177,8 @@ def forward_to_left(event):
         sv.set('Forward Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-        
+
+# Avance et tourne à droite simultanément
 def forward_to_right(event):
     selectedCar = choix_voitures.current()
     try:
@@ -172,20 +188,22 @@ def forward_to_right(event):
     except OSError :
         text_state_car.set("You are not connected !")
 
+# Recule et tourne à gauche simultanément
 def backward_to_left(event):
     selectedCar = choix_voitures.current()
     try:
         appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
-        appareils_connectes[selectedCar].send('\x03')  # Avance
+        appareils_connectes[selectedCar].send('\x03')  # Recule
         sv.set('Backward Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
         
+# Recule et tourne à droite simultanément       
 def backward_to_right(event):
     selectedCar = choix_voitures.current()
     try:
         appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
-        appareils_connectes[selectedCar].send('\x03')  # Avance
+        appareils_connectes[selectedCar].send('\x03')  # Recule
         sv.set('Backward Right\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
@@ -274,14 +292,12 @@ fleches_arriere = Frame(frame_fleches,height = 150, width=100)
 fleches_arriere.pack(anchor="center",side = TOP)
 
 # Boutons de contrôle de l'interface graphique
-
 fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(''), width=3 , height= 3)
 fleche_gauche.pack(side=LEFT)
 fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(''), width=3 , height= 3)
 fleche_haut.pack(side=LEFT)
 fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(''), width=3 , height= 3)
 fleche_droite.pack(side=LEFT)
-
 
 
 fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(''), width=3 , height= 3)
@@ -353,8 +369,7 @@ root.bind('<d>', backward_to_right)
 root.bind('<z>', move_forward)
 root.bind('<s>', move_backward)
 
-# affichage de l'interface
+# Affichage de l'interface graphique
 mainloop()
-
 
 ###########################################################################
