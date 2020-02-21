@@ -5,9 +5,8 @@ from tkinter import *
 import tkinter.ttk as ttk 
 from bluetooth import *
 
-# Initialise une socket Bluetooth
+# Initialise n emplacements pour des sockets Bluetooth
 appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
-nbConnected = 0  # 1 signifie qu'on a connecté une voiture, 2 = deux voitures, ...
 
 # Créé une socket Bluetooth
 class Bluetooth :
@@ -22,41 +21,43 @@ class Bluetooth :
         self.socket.send(ordre)
 
     # Arrete la connexion Bluetooth
-    def close(self):
+    def close(self, selectedCar):
         try :
-            selectedCar = choix_voitures.current() # Récupère la voiture selectionnée
-            appareils_connectes[selectedCar].close() # Ferme la socket de communication
-            del appareils_connectes[selectedCar]  # Supprime la voiture des appareils connectés
-            nbConnected -= 1
+            print("Appareils AVANT SUPPR : ", appareils_connectes)
+            self.socket.close() # Ferme la socket de communication
+            # TODO : Vérifier qu'on ferme bien la bonne socket !!
+            #appareils_connectes[selectedCar].close()
+            appareils_connectes[selectedCar] = None  # Supprime la voiture des appareils connectés
+            print("Appareils APRES SUPPR : ", appareils_connectes)
         except OSError :
             print("Erreur de déconnexion !")
 
 # Une socket Bluetooth
 def connectNewDevice(macaddr, selectedCar) :
     new_socket = Bluetooth()
-    #new_socket = BluetoothSocket(RFCOMM) # TODO Multiple connexion
     print("selectedCar = ", selectedCar)
-    #if appareils_connectes[selectedCar] == None :
-    appareils_connectes[selectedCar] = new_socket  # enregistre la socket dans notre liste d'appareils connectés
-    print("appareils_connectes[selectedCar] = ", appareils_connectes[selectedCar])
-    #appareils_connectes[selectedCar].bind(("", PORT_ANY))
-    res = new_socket.connect(macaddr)
-    #nbConnected += 1
-    print("appareils_connectes = ", appareils_connectes)
-    #else :
-        #print("Vous êtes déjà connecté à cet appareil !")
+    if appareils_connectes[selectedCar] == None :
+        #print("appareils_connectes[selectedCar] = ", appareils_connectes[selectedCar])
+        try :
+            new_socket.connect(macaddr)
+            appareils_connectes[selectedCar] = new_socket  # enregistre la socket dans notre liste d'appareils connectés
+        except OSError:
+            # Gère une erreur de connexion, si on désactive le bluetooth après le scan
+            text_state_car.set("Connection ERROR ! Device is not ON/available")
+    else :
+        print("Vous êtes déjà connecté à cet appareil !")
 
-# TODO
-#def disconnectDevice(selectedCar):
-#    appareils_connectes[selectedCar].close()
+# Déconnexion d'une socket
+def disconnectDevice(selectedCar):
+    appareils_connectes[selectedCar].close(selectedCar)
+    # TODO : IF closed -> Refresh affichage graphique : "Connection successful" -> "Enter a device name"
 
 ###########################################################################
 # Bluetooth scanning
 appareilsDispo = []
 def f_scan():
-    # TODO gérer si le Bluetooth est désactivé !
     text_state_car.set('Start scanning')
-    appareilsDetectes = discover_devices(lookup_names=True, duration=1)
+    appareilsDetectes = discover_devices(lookup_names=True, duration=2)
     # Liste des appareils proches
     appareilsDispo.clear()
     # TODO : La liste des appareils PROCHES, pas les appareils déjà accouplés
@@ -64,11 +65,14 @@ def f_scan():
         # Filtre seulement les appareils "beewi"
         if "beewi" in _name.lower():
             print(_mac, " ", _name)
-            print("_name = ", _name)
             appareilsDispo.append((_mac, _name))
 
     # Met à jour la liste des véhicules disponibles
-    choix_voitures['values'] = [appareil[1] for appareil in appareilsDispo]
+    for appareil in appareilsDispo:
+        if appareil[1] not in choix_voitures['values']:
+            # Ajoute un nouveau véhicule à la fin de la liste de choix
+            choix_voitures['values'] = (*choix_voitures['values'], appareil[1])
+
     # Maintenant on peut selectionner une voiture :
     choix_voitures['state'] = "enabled"
     btn_connect['state'] = NORMAL
@@ -90,20 +94,12 @@ def f_connect():
 
         if (car != []):
             text_state_car.set(car[1] +' detected')
-            try :
-                # Enregistre la socket associée à la voiture connectée
-                connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
-                text_state_car.set("Connection successful")
-            except OSError:
-                # Gère une erreur de connexion, si on désactive le bluetooth après le scan
-                text_state_car.set("Connection ERROR ! Device is not ON/available")
+            # Enregistre la socket associée à la voiture connectée
+            connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
+            text_state_car.set("Connection successful")
+
 
 ###########################################################################
-"""
-client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection successfull" -> "Enter a device name"
-                       # => Liste de choix des voitures au lieu de saisir !!!
-                       # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
-"""
 ###########################################################################
 
 """
@@ -148,8 +144,6 @@ def move_forward(event):
         sv.set('Forward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
         
 def move_backward(event):
     selectedCar = choix_voitures.current()
@@ -159,8 +153,6 @@ def move_backward(event):
         sv.set('Backward\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
         
 def forward_to_left(event):
     selectedCar = choix_voitures.current()
@@ -170,8 +162,6 @@ def forward_to_left(event):
         sv.set('Forward Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
         
 def forward_to_right(event):
     selectedCar = choix_voitures.current()
@@ -181,8 +171,6 @@ def forward_to_right(event):
         sv.set('Forward Right\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
 
 def backward_to_left(event):
     selectedCar = choix_voitures.current()
@@ -192,8 +180,6 @@ def backward_to_left(event):
         sv.set('Backward Left\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
         
 def backward_to_right(event):
     selectedCar = choix_voitures.current()
@@ -203,8 +189,6 @@ def backward_to_right(event):
         sv.set('Backward Right\n' + sv.get())
     except OSError :
         text_state_car.set("You are not connected !")
-    #except AttributeError :
-    #    text_state_car.set("You are not connected !")
 
 ###########################################################################
 # Tkinter
