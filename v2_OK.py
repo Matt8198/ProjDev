@@ -5,98 +5,50 @@ from tkinter import *
 import tkinter.ttk as ttk 
 from bluetooth import *
 
-# Socket pour 1 connexion bluetooth
-waitForBluetooth = True
-while waitForBluetooth :
-    try :
-        client_socket = BluetoothSocket( RFCOMM )
-        client_socket.bind(("", PORT_ANY))  # TODO une deuxième, tester en simultané
-        waitForBluetooth = False
-        # nbConnections à MAJ en fct du nb de clics sur Connect ?
-    except OSError :
-        print("Votre Bluetooth n'est pas activé !")
-        waitForBluetooth = True
-        time.sleep(5)
+# Initialise une socket Bluetooth
+appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
+nbConnected = 0  # 1 signifie qu'on a connecté une voiture, 2 = deux voitures, ...
 
-# STOP Forward  ↑ - \x00
-# Forward  ↑ - \x01
-# STOP Backward ↓ - \x02
-# Backward ↓ - \x03
-# STOP Left ← - \x04
-# Left      ← - \x05
-# STOP Right→ - \x06
-# Right     → - \x07
+# Créé une socket Bluetooth
+class Bluetooth :
+    def __init__(self):
+        self.socket = BluetoothSocket(RFCOMM)
 
-# Repositionne les roues droites
-def reset_wheels():
-    client_socket.send('\x04')  # STOP Left
-    client_socket.send('\x06')  # STOP Right
+    def connect(self, macaddr):
+        self.socket.connect((macaddr, 1))
+        print("Voiture connectée !")
 
-# Les fonctions "stop_...()" stoppent d'abord les autres mouvements avant de faire l'action souhaitée
-def stop_before_backward():
-    reset_wheels()
-    client_socket.send('\x00')  # STOP Forward
+    def send(self, ordre):
+        self.socket.send(ordre)
 
-def stop_before_forward():
-    reset_wheels()
-    client_socket.send('\x02')  # STOP Backward
+    # Arrete la connexion Bluetooth
+    def close(self):
+        try :
+            selectedCar = choix_voitures.current() # Récupère la voiture selectionnée
+            appareils_connectes[selectedCar].close() # Ferme la socket de communication
+            del appareils_connectes[selectedCar]  # Supprime la voiture des appareils connectés
+            nbConnected -= 1
+        except OSError :
+            print("Erreur de déconnexion !")
 
-"""
-Bind des touches :
-    A : Reculer et tourner à gauche
-    E : Reculer et tourner à droite
-    Z : Avancer en ligne droite
-    S : Reculer en ligne droite
-    Q : Avancer et tourner à gauche
-    D : Avancer et tourner à droite
-"""
-def move_forward(event):
-    try:
-        stop_before_forward()  # reset current moves
-        client_socket.send('\x01')  # avance en ligne droite
-        sv.set('Forward\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
-        
-def move_backward(event):
-    try:
-        stop_before_backward()  # reset current moves
-        client_socket.send('\x03')  # recule en ligne droite
-        sv.set('Backward\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
-        
-def forward_to_left(event):
-    try:
-        client_socket.send('\x05')  # Tourne à gauche
-        client_socket.send('\x01')  # Avance
-        sv.set('Forward Left\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
-        
-def forward_to_right(event):
-    try:
-        client_socket.send('\x07')  # Tourne à droite
-        client_socket.send('\x01')  # Avance
-        sv.set('Forward Right\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
+# Une socket Bluetooth
+def connectNewDevice(macaddr, selectedCar) :
+    new_socket = Bluetooth()
+    #new_socket = BluetoothSocket(RFCOMM) # TODO Multiple connexion
+    print("selectedCar = ", selectedCar)
+    #if appareils_connectes[selectedCar] == None :
+    appareils_connectes[selectedCar] = new_socket  # enregistre la socket dans notre liste d'appareils connectés
+    print("appareils_connectes[selectedCar] = ", appareils_connectes[selectedCar])
+    #appareils_connectes[selectedCar].bind(("", PORT_ANY))
+    res = new_socket.connect(macaddr)
+    #nbConnected += 1
+    print("appareils_connectes = ", appareils_connectes)
+    #else :
+        #print("Vous êtes déjà connecté à cet appareil !")
 
-def backward_to_left(event):
-    try:
-        client_socket.send('\x05')  # Tourne à gauche
-        client_socket.send('\x03')  # Avance
-        sv.set('Backward Left\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
-        
-def backward_to_right(event):
-    try:
-        client_socket.send('\x07')  # Tourne à droite
-        client_socket.send('\x03')  # Avance
-        sv.set('Backward Right\n' + sv.get())
-    except OSError :
-        text_state_car.set("You are not connected !")
+# TODO
+#def disconnectDevice(selectedCar):
+#    appareils_connectes[selectedCar].close()
 
 ###########################################################################
 # Bluetooth scanning
@@ -104,10 +56,10 @@ appareilsDispo = []
 def f_scan():
     # TODO gérer si le Bluetooth est désactivé !
     text_state_car.set('Start scanning')
-    appareilsDetectes = discover_devices(lookup_names=True, duration=3,
-                                         flush_cache=True)
+    appareilsDetectes = discover_devices(lookup_names=True, duration=1)
     # Liste des appareils proches
     appareilsDispo.clear()
+    # TODO : La liste des appareils PROCHES, pas les appareils déjà accouplés
     for _mac, _name in appareilsDetectes:
         # Filtre seulement les appareils "beewi"
         if "beewi" in _name.lower():
@@ -121,27 +73,30 @@ def f_scan():
     choix_voitures['state'] = "enabled"
     btn_connect['state'] = NORMAL
 
-# Bluetooth connection   
+# Bluetooth connection
 def f_connect():
     car = []
     selectedCar = choix_voitures.current()
-    try :
-        car = appareilsDispo[selectedCar]
-        # Connexion à la voiture
-        # TODO : Gérer @mac pour plusieurs voitures
-        _macaddr = car[0]
-    except IndexError:  # outofbounds
-        text_state_car.set('Please enable Bluetooth on your laptop !')
-
-    if (car != []):
-        text_state_car.set(car[1] +' detected')
+    choix_voitures['state'] = "disabled"
+    # Assure qu'on ait choisi une voiture parmi les choix disponibles
+    if selectedCar != -1 : 
         try :
-            client_socket.connect((_macaddr, 1))
-            text_state_car.set("Connection successful")
-        except OSError:
-            # Gère une erreur de connexion
-            text_state_car.set("Connection ERROR ! Device is not ON/available")
+            car = appareilsDispo[selectedCar]
+            # Connexion à la voiture
+            # TODO : Gérer @mac pour plusieurs voitures
+            macaddr = car[0]
+        except IndexError:  # outofbounds
+            text_state_car.set('Please enable Bluetooth on your laptop !')
 
+        if (car != []):
+            text_state_car.set(car[1] +' detected')
+            try :
+                # Enregistre la socket associée à la voiture connectée
+                connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
+                text_state_car.set("Connection successful")
+            except OSError:
+                # Gère une erreur de connexion, si on désactive le bluetooth après le scan
+                text_state_car.set("Connection ERROR ! Device is not ON/available")
 
 ###########################################################################
 """
@@ -149,6 +104,108 @@ client_socket.close()  # TODO : IF closed -> Refresh texte : "Connection success
                        # => Liste de choix des voitures au lieu de saisir !!!
                        # avec une map par exemple : 1 = "beewi mini cooper", 2 = "fiat 500" ...
 """
+###########################################################################
+
+"""
+    - STOP Forward  - \x00
+    - Forward       - \x01
+    - STOP Backward - \x02
+    - Backward      - \x03
+    - STOP Left     - \x04
+    - Left          - \x05
+    - STOP Right    - \x06
+    - Right         - \x07
+"""
+
+# Repositionne les roues droites
+def reset_wheels(selectedCar):
+    appareils_connectes[selectedCar].send('\x04')  # STOP Left
+    appareils_connectes[selectedCar].send('\x06')  # STOP Right
+
+# Les fonctions "stop_...()" stoppent d'abord les autres mouvements avant de faire l'action souhaitée
+def stop_before_backward(selectedCar):
+    reset_wheels(selectedCar)
+    appareils_connectes[selectedCar].send('\x00')  # STOP Forward
+
+def stop_before_forward(selectedCar):
+    reset_wheels(selectedCar)
+    appareils_connectes[selectedCar].send('\x02')  # STOP Backward
+
+"""
+Bind des touches :
+    A : Reculer et tourner à gauche
+    E : Reculer et tourner à droite
+    Z : Avancer en ligne droite
+    S : Reculer en ligne droite
+    Q : Avancer et tourner à gauche
+    D : Avancer et tourner à droite
+"""
+def move_forward(event):
+    selectedCar = choix_voitures.current()
+    try:
+        stop_before_forward(selectedCar)  # reset current moves
+        appareils_connectes[selectedCar].send('\x01')  # avance en ligne droite
+        sv.set('Forward\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+        
+def move_backward(event):
+    selectedCar = choix_voitures.current()
+    try:
+        stop_before_backward(selectedCar)  # reset current moves
+        appareils_connectes[selectedCar].send('\x03')  # recule en ligne droite
+        sv.set('Backward\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+        
+def forward_to_left(event):
+    selectedCar = choix_voitures.current()
+    try:
+        appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
+        appareils_connectes[selectedCar].send('\x01')  # Avance
+        sv.set('Forward Left\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+        
+def forward_to_right(event):
+    selectedCar = choix_voitures.current()
+    try:
+        appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
+        appareils_connectes[selectedCar].send('\x01')  # Avance
+        sv.set('Forward Right\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+
+def backward_to_left(event):
+    selectedCar = choix_voitures.current()
+    try:
+        appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
+        appareils_connectes[selectedCar].send('\x03')  # Avance
+        sv.set('Backward Left\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+        
+def backward_to_right(event):
+    selectedCar = choix_voitures.current()
+    try:
+        appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
+        appareils_connectes[selectedCar].send('\x03')  # Avance
+        sv.set('Backward Right\n' + sv.get())
+    except OSError :
+        text_state_car.set("You are not connected !")
+    #except AttributeError :
+    #    text_state_car.set("You are not connected !")
+
 ###########################################################################
 # Tkinter
 root = Tk()
