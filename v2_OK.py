@@ -117,8 +117,9 @@ def reset_wheels(selectedCar):
     try:
         appareils_connectes[selectedCar].send('\x04')  # STOP Left
         appareils_connectes[selectedCar].send('\x06')  # STOP Right
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
         
 """
     Les fonctions "stop_...()" arrêtent d'abord les autres mouvements
@@ -128,15 +129,26 @@ def stop_before_backward(selectedCar):
     reset_wheels(selectedCar)
     try:
         appareils_connectes[selectedCar].send('\x00')  # STOP Forward
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 def stop_before_forward(selectedCar):
     reset_wheels(selectedCar)
     try:
         appareils_connectes[selectedCar].send('\x02')  # STOP Backward
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
+
+def stop_all(selectedCar):
+    reset_wheels(selectedCar)
+    try:
+        appareils_connectes[selectedCar].send('\x00')  # STOP Forward
+        appareils_connectes[selectedCar].send('\x02')  # STOP Backward
+    except (OSError, AttributeError) as e :
+        text_state_car.set("You are not connected !")
+        print(e)
 
 """
 Bind des touches :
@@ -155,8 +167,9 @@ def move_forward(event):
     try : 
         appareils_connectes[selectedCar].send('\x01')  # Avance en ligne droite
         sv.set('Forward\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 def move_backward(event):
     selectedCar = choix_voitures.current()
@@ -164,8 +177,9 @@ def move_backward(event):
     try:
         appareils_connectes[selectedCar].send('\x03')  # Recule en ligne droite
         sv.set('Backward\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 # Fonctions de déplacements plus avancées
 # Avance et tourne à gauche simultanément
@@ -175,8 +189,9 @@ def forward_to_left(event):
         appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
         appareils_connectes[selectedCar].send('\x01')  # Avance
         sv.set('Forward Left\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 # Avance et tourne à droite simultanément
 def forward_to_right(event):
@@ -185,8 +200,9 @@ def forward_to_right(event):
         appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
         appareils_connectes[selectedCar].send('\x01')  # Avance
         sv.set('Forward Right\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 # Recule et tourne à gauche simultanément
 def backward_to_left(event):
@@ -195,8 +211,9 @@ def backward_to_left(event):
         appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
         appareils_connectes[selectedCar].send('\x03')  # Recule
         sv.set('Backward Left\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
         
 # Recule et tourne à droite simultanément       
 def backward_to_right(event):
@@ -205,8 +222,9 @@ def backward_to_right(event):
         appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
         appareils_connectes[selectedCar].send('\x03')  # Recule
         sv.set('Backward Right\n' + sv.get())
-    except OSError :
+    except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
+        print(e)
 
 ###########################################################################
 # Tkinter
@@ -368,6 +386,7 @@ root.bind('<q>', backward_to_left)
 root.bind('<d>', backward_to_right)
 root.bind('<z>', move_forward)
 root.bind('<s>', move_backward)
+root.bind('<space>', stop_all)
 
 # Affichage de l'interface graphique
 mainloop()
