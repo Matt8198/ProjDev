@@ -10,6 +10,7 @@ appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
 
 # Créé une socket Bluetooth
 class Bluetooth :
+
     def __init__(self):
         self.socket = BluetoothSocket(RFCOMM)
 
@@ -159,6 +160,7 @@ Bind des touches :
     Q : Avancer et tourner à gauche
     D : Avancer et tourner à droite
 """
+
 ###########################################################################
 # Fonctions directement associées aux Listeners sur les touches assignées
 def move_forward(event):
@@ -225,6 +227,84 @@ def backward_to_right(event):
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
+
+###########################################################################
+# Fonctions de macro prédéfinies
+
+# Macro 1 - Demi-tour gauche
+def m1(event):
+    forward_to_left(event)
+    time.sleep(1)
+    backward_to_right(event)
+    time.sleep(1)
+    forward_to_left(event)
+
+# Macro 2 - Demi-tour droite
+def m2(event):
+    forward_to_right(event)
+    time.sleep(1)
+    backward_to_left(event)
+    time.sleep(1)
+    forward_to_right(event)
+
+# Macro 3 - Cercle dans le sens des aiguilles d'une montre
+def m3(event):
+    forward_to_right(event)
+    time.sleep(0.5)
+    forward_to_right(event)
+    time.sleep(0.5)
+    forward_to_right(event)
+    time.sleep(0.5)
+    forward_to_right(event)
+    time.sleep(0.5)
+    forward_to_right(event)
+
+# Macro 4 - Cercle dans le sens inverse des aiguilles d'une montre
+def m4(event):
+    forward_to_left(event)
+    time.sleep(0.5)
+    forward_to_left(event)
+    time.sleep(0.5)
+    forward_to_left(event)
+    time.sleep(0.5)
+    forward_to_left(event)
+    time.sleep(0.5)
+    forward_to_left(event)
+
+# Macro 5 - Rangement en creneau
+def m5(event):
+    move_forward(event)
+    time.sleep(0.5)
+    backward_to_right(event)
+    time.sleep(1)
+    backward_to_right(event)
+    time.sleep(1)
+    backward_to_left(event)
+    time.sleep(0.1)
+
+# Macro 6 - Rangement en épis avant
+def m6(event):
+    forward_to_left(event)
+    time.sleep(1)
+    move_backward(event)
+
+# Macro 7 - Rangement en épis arriere
+def m7(event):
+    backward_to_left(event)
+    time.sleep(1)
+    move_forward(event)
+
+# Macro 8 - Slalom
+def m8(event):
+    forward_to_right(event)
+    time.sleep(0.7)
+    forward_to_left(event)
+    time.sleep(0.7)
+    forward_to_right(event)
+    time.sleep(0.7)
+    forward_to_left(event)
+    time.sleep(0.7)
+    forward_to_right(event)
 
 ###########################################################################
 # Tkinter
@@ -331,16 +411,32 @@ frame_demos=Frame(mid,height = 150, width=180, background="steel blue")
 frame_demos.pack(anchor="e",side = LEFT, padx=20, fill=BOTH)
 
 #Boutons pour lancer des démos (circuits)
-liste_circuits = Label(frame_demos, bg='navy',fg="white", text="     Liste de circuits      ", font='Helvetica 12 bold')
-liste_circuits.pack(anchor="n")
-circuit_1 = Label(frame_demos, text="Circuit 1", fg="black", font='Helvetica 12 ', background="steel blue")
-circuit_1.pack()
-circuit_2 = Label(frame_demos, text="Circuit 2", fg="black", font='Helvetica 12 ', background="steel blue")
-circuit_2.pack()
-circuit_3 = Label(frame_demos, text="Circuit 3", fg="black", font='Helvetica 12 ', background="steel blue")
-circuit_3.pack()
-circuit_4 = Label(frame_demos, text="Circuit 4", fg="black", font='Helvetica 12 ', background="steel blue")
-circuit_4.pack()
+liste_macro = Label(frame_demos, bg='navy',fg="white", text="     Liste de Macro      ", font='Helvetica 12 bold')
+liste_macro.pack(anchor="n")
+macro_1 = Label(frame_demos, text="Macro 1", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_1.pack()
+macro_1.bind("<Button-1>",m1)
+macro_2 = Label(frame_demos, text="Macro 2", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_2.pack()
+macro_2.bind("<Button-1>",m2)
+macro_3 = Label(frame_demos, text="Macro 3", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_3.pack()
+macro_3.bind("<Button-1>",m3)
+macro_4 = Label(frame_demos, text="Macro 4", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_4.pack()
+macro_4.bind("<Button-1>",m4)
+macro_5 = Label(frame_demos, text="Macro 5", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_5.pack()
+macro_5.bind("<Button-1>",m5)
+macro_6 = Label(frame_demos, text="Macro 6", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_6.pack()
+macro_6.bind("<Button-1>",m6)
+macro_7 = Label(frame_demos, text="Macro 7", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_7.pack()
+macro_7.bind("<Button-1>",m7)
+macro_8 = Label(frame_demos, text="Macro 8", fg="black", font='Helvetica 12 ', background="steel blue")
+macro_8.pack()
+macro_8.bind("<Button-1>",m8)
 
 #Fin top--------------------------------------------------------------------------------
 
