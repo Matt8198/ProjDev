@@ -1,12 +1,14 @@
 import os
 import sys
 import time
+from copy import deepcopy
 from tkinter import *
 import tkinter.ttk as ttk 
 from bluetooth import *
 
 # Initialise n emplacements pour des sockets Bluetooth
 appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
+macro_rec = []
 
 # Créé une socket Bluetooth
 class Bluetooth :
@@ -102,6 +104,7 @@ def f_connect():
 
 ###########################################################################
 ###########################################################################
+
 """
     - STOP Forward  - \x00
     - Forward       - \x01
@@ -126,6 +129,7 @@ def reset_wheels(selectedCar):
     Les fonctions "stop_...()" arrêtent d'abord les autres mouvements
     AVANT de faire l'action souhaitée
 """
+
 def stop_before_backward(selectedCar):
     reset_wheels(selectedCar)
     try:
@@ -166,9 +170,12 @@ Bind des touches :
 def move_forward(event):
     selectedCar = choix_voitures.current()
     stop_before_forward(selectedCar)  # reset current moves
-    try : 
-        appareils_connectes[selectedCar].send('\x01')  # Avance en ligne droite
-        sv.set('Forward\n' + sv.get())
+    try :
+        if (varRec.get()):
+            macro_rec.append(1)
+        else:
+            appareils_connectes[selectedCar].send('\x01')  # Avance en ligne droite
+            sv.set('Forward\n' + sv.get())  
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -177,8 +184,11 @@ def move_backward(event):
     selectedCar = choix_voitures.current()
     stop_before_backward(selectedCar)  # reset current moves
     try:
-        appareils_connectes[selectedCar].send('\x03')  # Recule en ligne droite
-        sv.set('Backward\n' + sv.get())
+        if (varRec.get()):
+            macro_rec.append(2)
+        else:
+            appareils_connectes[selectedCar].send('\x03')  # Recule en ligne droite
+            sv.set('Backward\n' + sv.get())
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -188,9 +198,12 @@ def move_backward(event):
 def forward_to_left(event):
     selectedCar = choix_voitures.current()
     try:
-        appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
-        appareils_connectes[selectedCar].send('\x01')  # Avance
-        sv.set('Forward Left\n' + sv.get())
+        if (varRec.get()):
+            macro_rec.append(3)
+        else:
+            appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
+            appareils_connectes[selectedCar].send('\x01')  # Avance
+            sv.set('Forward Left\n' + sv.get())
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -199,9 +212,12 @@ def forward_to_left(event):
 def forward_to_right(event):
     selectedCar = choix_voitures.current()
     try:
-        appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
-        appareils_connectes[selectedCar].send('\x01')  # Avance
-        sv.set('Forward Right\n' + sv.get())
+        if (varRec.get()):
+            macro_rec.append(4)
+        else:
+            appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
+            appareils_connectes[selectedCar].send('\x01')  # Avance
+            sv.set('Forward Right\n' + sv.get())
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -210,9 +226,12 @@ def forward_to_right(event):
 def backward_to_left(event):
     selectedCar = choix_voitures.current()
     try:
-        appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
-        appareils_connectes[selectedCar].send('\x03')  # Recule
-        sv.set('Backward Left\n' + sv.get())
+        if (varRec.get()):
+            macro_rec.append(5)
+        else:
+            appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
+            appareils_connectes[selectedCar].send('\x03')  # Recule
+            sv.set('Backward Left\n' + sv.get())
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -221,9 +240,12 @@ def backward_to_left(event):
 def backward_to_right(event):
     selectedCar = choix_voitures.current()
     try:
-        appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
-        appareils_connectes[selectedCar].send('\x03')  # Recule
-        sv.set('Backward Right\n' + sv.get())
+        if (varRec.get()):
+            macro_rec.append(6)
+        else:
+            appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
+            appareils_connectes[selectedCar].send('\x03')  # Recule
+            sv.set('Backward Right\n' + sv.get())
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
@@ -307,6 +329,36 @@ def m8(event):
     forward_to_right(event)
 
 ###########################################################################
+# Fonction d'enregistrement
+
+def write_rec():
+    global macro_rec
+    print("oui")
+    if (varRec.get()):
+        print("BEGIN : REC")
+    else:
+        print("END : REC")
+        print(macro_rec)
+        macro_rec = []
+
+def read_rec(event,macro):
+    for c in macro:
+        if (c==1):  
+            move_forward(event)
+        elif (c==2):
+            move_backward(event)
+        elif (c==3):
+            forward_to_left(event)
+        elif (c==4):
+            forward_to_right(event)
+        elif (c==5):
+            backward_to_left(event)
+        elif (c==6):  
+            backward_to_right(event)
+        time.sleep(1)        
+
+
+###########################################################################
 # Tkinter
 root = Tk()
 root.title('Control Interface')
@@ -316,21 +368,21 @@ root.geometry('' + str(largeur) + 'x' + str(hauteur))
 root.maxsize(largeur, hauteur)
 root.resizable(width=False, height=False)
 
-#Debut top--------------------------------------------------------------------------------
+# Debut top--------------------------------------------------------------------------------
 
-#Top application
+# Top application
 top = Label(root, bg="gray7")
 top.pack(anchor="n",fill=X)
 
-#Label pour logos
+# Label pour logos
 logos = Label(top, bg="gray7")
 logos.pack(anchor="w",side=LEFT,fill=Y)
 
-#Label pour neocampus et bluetooth logo
+# Label pour neocampus et bluetooth logo
 blue_neo = Label(logos, bg="gray7")
 blue_neo.pack(anchor="e",side=TOP,fill=X)
 
-#Affichage Logos
+# Affichage Logos
 photo_bluetooth = PhotoImage(file = "Vroum2.png")
 logo_bluetooth = Label(blue_neo, image= photo_bluetooth, bg="gray7")
 logo_bluetooth.pack(side=LEFT)
@@ -343,11 +395,11 @@ photo_ps = PhotoImage(file = "paulsab.png")
 logo_ps = Label(logos, image= photo_ps, bg="gray7")
 logo_ps.pack(anchor="nw",side=LEFT,padx=10)
 
-#Frame pour liste de commandes
+# Frame pour liste de commandes
 frame_liste_commandes = Frame(top, height = 100, width=120, background="steel blue")
 frame_liste_commandes.pack(anchor="ne",side= RIGHT, padx = 20, pady=20)
 
-#Affichage liste commandes
+# Affichage liste commandes
 liste_commande = Label(frame_liste_commandes, bg='navy',fg="white", text="Liste de commandes", font='Helvetica 12 bold', justify="center")
 liste_commande.pack(anchor="n")
 commande_haut = Label(frame_liste_commandes, text="↑ Haut", fg="black", font='Helvetica 12 ', background="steel blue")
@@ -359,58 +411,65 @@ commande_gauche.pack()
 commande_droite = Label(frame_liste_commandes, text="→ Droite", fg="black", font='Helvetica 12 ', background="steel blue")
 commande_droite.pack()
 
-#Fin top--------------------------------------------------------------------------------
+# Fin top--------------------------------------------------------------------------------
 
-#Debut mid--------------------------------------------------------------------------------
+# Debut mid--------------------------------------------------------------------------------
 
-#Mid application
+# Mid application
 mid = Label(root, height = 200, width=600, background="gray7")
 mid.pack(anchor="center", fill=X)
 
-#Variable texte pour l'historique
+# Variable texte pour l'historique
 sv = StringVar()
 
-#Historique des commandes
+# Variable entiere pour l'enregistrement
+varRec = IntVar()
+
+# Historique des commandes
 historique = Label(mid, textvariable=sv, font='Helvetica 12 ', fg='red', bg='steel blue',anchor=NW, width=20, height=15)
 #scroll = Scrollbar(historique, orient='vertical')
 #scroll.pack(anchor="e",side=RIGHT)
 historique.pack(anchor="w",padx=20, side= LEFT)
 
+# Frame pour stocker les flèches
+frame_fleches = Frame(mid, height=150, width=200, background="gray7")
+frame_fleches.pack(anchor="center", side=LEFT, padx=60)
 
-#Frame pour stocker les flèches
-frame_fleches = Frame(mid,height = 150, width=200, background="gray7")
-frame_fleches.pack(anchor="center",side = LEFT, padx=60)
+# Frame pour stocker fleches marche avant
+fleches_avance = Frame(frame_fleches, height=150, width=100)
+fleches_avance.pack(anchor="center",side=TOP)
 
-#Frame pour stocker fleches marche avant
-fleches_avance = Frame(frame_fleches,height = 150, width=100)
-fleches_avance.pack(anchor="center",side = TOP)
+# Frame pour stocker fleches marche arriere
+fleches_arriere = Frame(frame_fleches, height=150, width=100)
+fleches_arriere.pack(anchor="center",side=TOP)
 
-#Frame pour stocker fleches marche arriere
-fleches_arriere = Frame(frame_fleches,height = 150, width=100)
-fleches_arriere.pack(anchor="center",side = TOP)
+# Frame pour stocker les boutons annexes
+frame_annexes = Frame(frame_fleches, height=150, width=100)
+frame_annexes.pack(anchor="center",side=TOP)
 
 # Boutons de contrôle de l'interface graphique
-fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(''), width=3 , height= 3)
+fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(''), width=3 , height=3)
 fleche_gauche.pack(side=LEFT)
-fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(''), width=3 , height= 3)
+fleche_haut = Button(fleches_avance, text='↑', command = lambda: move_forward(''), width=3 , height=3)
 fleche_haut.pack(side=LEFT)
-fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(''), width=3 , height= 3)
+fleche_droite = Button(fleches_avance, text='→', command = lambda: forward_to_right(''), width=3 , height=3)
 fleche_droite.pack(side=LEFT)
-
-
-fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(''), width=3 , height= 3)
+fleche_back_gauche = Button(fleches_arriere, text='←|', command = lambda: backward_to_left(''), width=3 , height=3)
 fleche_back_gauche.pack(side=LEFT)
-fleche_bas = Button(fleches_arriere, text='↓', command = lambda: move_backward(''), width=3 , height= 3)
+fleche_bas = Button(fleches_arriere, text='↓', command = lambda: move_backward(''), width=3 , height=3)
 fleche_bas.pack(side=LEFT)
-fleche_back_droite = Button(fleches_arriere, text='|→', command = lambda: backward_to_right(''), width=3 , height= 3)
+fleche_back_droite = Button(fleches_arriere, text='|→', command = lambda: backward_to_right(''), width=3 , height=3)
 fleche_back_droite.pack(side=LEFT)
+btn_stop = Button(frame_annexes, text='STOP', command = lambda: stop_all(''), width=3 , height=3)
+btn_stop.pack(side=LEFT)
+btn_rec = Checkbutton(frame_annexes, variable=varRec, text='REC', command = write_rec, width=3 , height=3, indicatoron=0)
+btn_rec.pack(side=LEFT)
 
-
-#Frame pour stocker les boutons de démos
+# Frame pour stocker les boutons de démos
 frame_demos=Frame(mid,height = 150, width=180, background="steel blue")
 frame_demos.pack(anchor="e",side = LEFT, padx=20, fill=BOTH)
 
-#Boutons pour lancer des démos (circuits)
+# Boutons pour lancer des démos (circuits)
 liste_macro = Label(frame_demos, bg='navy',fg="white", text="     Liste de Macro      ", font='Helvetica 12 bold')
 liste_macro.pack(anchor="n")
 macro_1 = Label(frame_demos, text="Macro 1", fg="black", font='Helvetica 12 ', background="steel blue")
@@ -438,15 +497,15 @@ macro_8 = Label(frame_demos, text="Macro 8", fg="black", font='Helvetica 12 ', b
 macro_8.pack()
 macro_8.bind("<Button-1>",m8)
 
-#Fin top--------------------------------------------------------------------------------
+# Fin top--------------------------------------------------------------------------------
 
-#Debut bot--------------------------------------------------------------------------------
+# Debut bot--------------------------------------------------------------------------------
 
-#Bot application
+# Bot application
 bot = Label(root, height = 200, width=600, background="gray7")
 bot.pack(anchor="s", fill=X)
 
-#Variable texte pour état voiture
+# Variable texte pour état voiture
 text_state_car = StringVar()
 text_state_car.set("Etat de la voiture")
 lb_connect = LabelFrame(root, bg='green')
@@ -456,11 +515,11 @@ lb_connect.pack(anchor="w",side = LEFT, padx=20,pady=10)
 state_car=Label(bot,height = 30,textvariable=text_state_car, width=40,fg='red', bg='steel blue',anchor=W)
 state_car.pack(anchor="w",side = LEFT, padx=20,pady=10)
 
-#Frame pour stocker liste deroulante des voitures et bouton login
+# Frame pour stocker liste deroulante des voitures et bouton login
 frame_connexion=Frame(bot,height = 150, width=250, background="steel blue")
 frame_connexion.pack(anchor="e",side = RIGHT, padx=20,pady=10)
 
-#liste deroulante pour le choix de la voiture à connecter
+# Liste deroulante pour le choix de la voiture à connecter
 choix_voitures = ttk.Combobox(frame_connexion, values=[],
                               state="disabled")  # readonly au départ car aucune voiture n'a été détéctée pour le moment
 choix_voitures.pack(side=LEFT,padx=5)
@@ -473,9 +532,9 @@ btn_connect.pack(side=RIGHT, padx=5)
 scan = Button(frame_connexion, text='BT Scan', command = lambda: f_scan())
 scan.pack(side=RIGHT, padx=5)
 
-#Fin bot--------------------------------------------------------------------------------
+# Fin bot--------------------------------------------------------------------------------
 
-# listeners des flèches au clavier
+# Listeners des flèches au clavier
 root.bind('<a>', forward_to_left)
 root.bind('<e>', forward_to_right)
 root.bind('<q>', backward_to_left)
@@ -483,7 +542,7 @@ root.bind('<d>', backward_to_right)
 root.bind('<z>', move_forward)
 root.bind('<s>', move_backward)
 root.bind('<space>', stop_all)
-
+ 
 # Affichage de l'interface graphique
 mainloop()
 
