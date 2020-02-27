@@ -146,14 +146,15 @@ def stop_before_forward(selectedCar):
         text_state_car.set("You are not connected !")
         print(e)
 
-def stop_all(selectedCar):
-    reset_wheels(selectedCar)
+def stop_all(event):
+    selectedCar = choix_voitures.current()
     try:
         appareils_connectes[selectedCar].send('\x00')  # STOP Forward
         appareils_connectes[selectedCar].send('\x02')  # STOP Backward
     except (OSError, AttributeError) as e :
         text_state_car.set("You are not connected !")
         print(e)
+    reset_wheels(selectedCar)
 
 """
 Bind des touches :
