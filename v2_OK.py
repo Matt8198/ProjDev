@@ -9,6 +9,11 @@ from bluetooth import *
 # Initialise n emplacements pour des sockets Bluetooth
 appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
 macro_rec = []
+#Initialise les noms des appreils connectés
+app_1 = ""
+app_2 = ""
+app_3 = ""
+apps=[app_1, app_2, app_3]
 
 # Créé une socket Bluetooth
 class Bluetooth :
@@ -100,8 +105,20 @@ def f_connect():
             # Enregistre la socket associée à la voiture connectée
             connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
             text_state_car.set("Connection successful")
+            devices_connected(car[1])
 
-
+#Affichage appareils connectés
+def devices_connected(car):
+    for i in range (len(apps)):
+        if(apps[i] == ""):
+            apps[i] = car
+    app_connect_1.pack_forget()
+    app_connect_2.pack_forget()
+    app_connect_3.pack_forget()
+    app_connect_1.pack(anchor="n")
+    app_connect_2.pack(anchor="n")
+    app_connect_3.pack(anchor="n")
+        
 ###########################################################################
 ###########################################################################
 
@@ -364,7 +381,7 @@ def read_rec(event,macro):
 root = Tk()
 root.title('Control Interface')
 largeur = 650
-hauteur = 500
+hauteur = 550
 root.geometry('' + str(largeur) + 'x' + str(hauteur))
 root.maxsize(largeur, hauteur)
 root.resizable(width=False, height=False)
@@ -466,13 +483,26 @@ btn_stop.pack(side=LEFT)
 btn_rec = Checkbutton(frame_annexes, variable=varRec, text='REC', command = write_rec, width=3 , height=3, indicatoron=0)
 btn_rec.pack(side=LEFT)
 
-# Frame pour stocker les boutons de démos
-frame_demos=Frame(mid,height = 150, width=180, background="steel blue")
-frame_demos.pack(anchor="e",side = LEFT, padx=20, fill=BOTH)
+
+#Frame pour démos et appareils connectés
+frame_demos_et_appareils = Frame(mid,height = 150, width=180, background="gray7")
+frame_demos_et_appareils.pack(anchor="e",side = LEFT, padx=20, fill=BOTH)
+
+#Frame pour stocker les boutons de démos
+frame_demos=Frame(frame_demos_et_appareils,height = 70, width=180, background="steel blue")
+frame_demos.pack(anchor="n",side=TOP, fill=X)
+
+#Frame pour stocker la liste des appareils connectés
+frame_app_co=Frame(frame_demos_et_appareils,height = 70, width=80, background="steel blue")
+frame_app_co.pack(anchor="s",side=BOTTOM, fill=X)
+
+#Titre frame_app_co
+titre_app_co = Label(frame_app_co, bg='navy',fg="white", text="     Appareils Connectés      ", font='Helvetica 12 bold')
+titre_app_co.pack(anchor="n")
 
 # Boutons pour lancer des démos (circuits)
 liste_macro = Label(frame_demos, bg='navy',fg="white", text="     Liste de Macro      ", font='Helvetica 12 bold')
-liste_macro.pack(anchor="n")
+liste_macro.pack(anchor="n",fill=X)
 macro_1 = Label(frame_demos, text="Macro 1", fg="black", font='Helvetica 12 ', background="steel blue")
 macro_1.pack()
 macro_1.bind("<Button-1>",m1)
@@ -498,6 +528,13 @@ macro_8 = Label(frame_demos, text="Macro 8", fg="black", font='Helvetica 12 ', b
 macro_8.pack()
 macro_8.bind("<Button-1>",m8)
 
+# Init fenêtre devices connected
+app_connect_1 = Label(frame_app_co, text=app_1, fg="black", font='Helvetica 12 ', background="steel blue")
+app_connect_1.pack(anchor="n")
+app_connect_2 = Label(frame_app_co, text=app_2, fg="black", font='Helvetica 12 ', background="steel blue")
+app_connect_2.pack(anchor="n")
+app_connect_3 = Label(frame_app_co, text=app_3, fg="black", font='Helvetica 12 ', background="steel blue")
+app_connect_3.pack(anchor="n")
 # Fin top--------------------------------------------------------------------------------
 
 # Debut bot--------------------------------------------------------------------------------
