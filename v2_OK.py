@@ -76,14 +76,21 @@ def f_scan():
                 print(_mac, " ", _name)
                 appareilsDispo.append((_mac, _name))
         print("appareilsDispo =", appareilsDispo)
+        for newMac, newName in appareilsDispo:
+            # On a une nouvelle voiture Beewi
+            if ("beewi" in newName.lower()):
+                # Ajoute un nouveau véhicule à la fin de la liste de choix
+                choix_voitures['values'] = (*choix_voitures['values'], newName)
     else :
         macDispo = [x[0] for x in appareilsDispo]
+        # print("maaac",macDispo)
         # Met à jour la liste des véhicules disponibles
         for newMac, newName in appareilsDetectes:
+            print(newMac,newName)
             # On a une nouvelle voiture Beewi
             if (newMac not in macDispo) and ("beewi" in newName.lower()):
                 # Ajoute un nouveau véhicule à la fin de la liste de choix
-                choix_voitures['values'] = (*choix_voitures['values'], appareil[1])
+                choix_voitures['values'] = (*choix_voitures['values'], newName)
 
     # Maintenant on peut selectionner une voiture :
     choix_voitures['state'] = "enabled"
@@ -109,6 +116,8 @@ def f_connect():
             connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
             text_state_car.set("Connection successful")
             devices_connected(car[1])
+            appareils_connectes[selectedCar]=(car[1])
+    print(appareils_connectes)
 
 #Affichage appareils connectés
 def devices_connected(car):
@@ -121,6 +130,18 @@ def devices_connected(car):
     app_connect_1.pack(anchor="n")
     app_connect_2.pack(anchor="n")
     app_connect_3.pack(anchor="n")
+
+###########################################################################
+###########################################################################
+
+
+
+def multicar(appareilsDispo,appareils_connectes,ordre):
+    print(appareils_connectes)
+    for socket in appareils_connectes:
+        if socket!=None:
+            for o in ordre:
+                socket.send(o)
         
 ###########################################################################
 ###########################################################################
