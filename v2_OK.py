@@ -62,24 +62,28 @@ def disconnectDevice(selectedCar):
 
 ###########################################################################
 # Bluetooth scanning
-appareilsDispo = []
+appareilsDispo = []      # Liste des appareils proches
 def f_scan():
     text_state_car.set('Start scanning')
     appareilsDetectes = discover_devices(lookup_names=True, duration=2)
-    # Liste des appareils proches
-    appareilsDispo.clear()
-    # TODO : La liste des appareils PROCHES, pas les appareils déjà accouplés
-    for _mac, _name in appareilsDetectes:
-        # Filtre seulement les appareils "beewi"
-        if "beewi" in _name.lower():
-            print(_mac, " ", _name)
-            appareilsDispo.append((_mac, _name))
+    print("appareilsDetectes =", appareilsDetectes)
 
-    # Met à jour la liste des véhicules disponibles
-    for appareil in appareilsDispo:
-        if appareil[1] not in choix_voitures['values']:
-            # Ajoute un nouveau véhicule à la fin de la liste de choix
-            choix_voitures['values'] = (*choix_voitures['values'], appareil[1])
+    if appareilsDispo == [] :
+        #La liste des appareils PROCHES
+        for _mac, _name in appareilsDetectes:
+            # Filtre seulement les appareils "beewi"
+            if "beewi" in _name.lower():
+                print(_mac, " ", _name)
+                appareilsDispo.append((_mac, _name))
+        print("appareilsDispo =", appareilsDispo)
+    else :
+        macDispo = [x[0] for x in appareilsDispo]
+        # Met à jour la liste des véhicules disponibles
+        for newMac, newName in appareilsDetectes:
+            # On a une nouvelle voiture Beewi
+            if (newMac not in macDispo) and ("beewi" in newName.lower()):
+                # Ajoute un nouveau véhicule à la fin de la liste de choix
+                choix_voitures['values'] = (*choix_voitures['values'], appareil[1])
 
     # Maintenant on peut selectionner une voiture :
     choix_voitures['state'] = "enabled"
@@ -89,13 +93,12 @@ def f_scan():
 def f_connect():
     car = []
     selectedCar = choix_voitures.current()
-    choix_voitures['state'] = "disabled"
+    # choix_voitures['state'] = "disabled"
     # Assure qu'on ait choisi une voiture parmi les choix disponibles
     if selectedCar != -1 : 
         try :
             car = appareilsDispo[selectedCar]
             # Connexion à la voiture
-            # TODO : Gérer @mac pour plusieurs voitures
             macaddr = car[0]
         except IndexError:  # outofbounds
             text_state_car.set('Please enable Bluetooth on your laptop !')
@@ -380,11 +383,11 @@ def read_rec(event,macro):
 # Tkinter
 root = Tk()
 root.title('Control Interface')
-largeur = 650
+largeur = 750
 hauteur = 550
 root.geometry('' + str(largeur) + 'x' + str(hauteur))
-root.maxsize(largeur, hauteur)
-root.resizable(width=False, height=False)
+#root.maxsize(largeur, hauteur)
+#root.resizable(width=False, height=False)
 
 # Debut top--------------------------------------------------------------------------------
 
