@@ -134,14 +134,51 @@ def devices_connected(car):
 ###########################################################################
 ###########################################################################
 
+def multicar(ordre):
+    appareilsDispo = []
+    
+    appareilsDetectes = discover_devices(lookup_names=True, duration=2)
+    print("appareilsDetectes =", appareilsDetectes)
 
+    #On récupère toutes les Beewi dispo
+    if appareilsDispo == [] :
+        #La liste des appareils PROCHES
+        for _mac, _name in appareilsDetectes:
+            # Filtre seulement les appareils "beewi"
+            if "beewi" in _name.lower():
+                print(_mac, " ", _name)
+                appareilsDispo.append((_mac, _name))
+                
+    appareils_connectes = [None]*len(appareilsDispo)
+    print("dispo",appareilsDispo)
+    #On connecte toutes les Beewi
+    for i in range(len(appareilsDispo)):
+        selectedCar=i
+        if selectedCar != -1 : 
+            try :
+                car = appareilsDispo[selectedCar]
+                # Connexion à la voiture
+                macaddr = car[0]
+            except IndexError:  # outofbounds
+                print('Please enable Bluetooth on your laptop !')
 
-def multicar(appareilsDispo,appareils_connectes,ordre):
-    print(appareils_connectes)
-    for socket in appareils_connectes:
-        if socket!=None:
-            for o in ordre:
-                socket.send(o)
+            if (car != []):
+                # Enregistre la socket associée à la voiture connectée
+                new_sock = Bluetooth()
+                try :
+                    new_sock.connect(macaddr)
+                    appareils_connectes[selectedCar] = new_sock  # passe le numéro de la voiture (indice de la liste de choix)
+                except OSError:
+                    # Gère une erreur de connexion, si on désactive le bluetooth après le scan
+                    print("Connection ERROR ! Device is not ON/available")
+                
+
+    print("la liste",appareils_connectes)
+    for o in ordre:
+        for i in range(len(appareils_connectes)):
+            appareils_connectes[i].send(o)
+            time.sleep(0.1)
+
         
 ###########################################################################
 ###########################################################################
@@ -606,6 +643,8 @@ root.bind('<s>', move_backward)
 root.bind('<space>', stop_all)
  
 # Affichage de l'interface graphique
-mainloop()
+# mainloop()
 
 ###########################################################################
+if __name__ == "__main__":
+    multicar(["\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04"])
