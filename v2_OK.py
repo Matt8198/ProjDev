@@ -134,7 +134,7 @@ def devices_connected(car):
 ###########################################################################
 ###########################################################################
 
-def multicar(ordre):
+def multicar(ordre,temps,vitesse):
     appareilsDispo = []
     
     appareilsDetectes = discover_devices(lookup_names=True, duration=2)
@@ -174,10 +174,43 @@ def multicar(ordre):
                 
 
     print("la liste",appareils_connectes)
-    for o in ordre:
+    #Prendre la liste la plus grande comme repere
+    maxi = 0
+    for i in (ordre):
+        if len(i)>maxi:
+            maxi = len(i)
+
+
+    for o in range(maxi):
         for i in range(len(appareils_connectes)):
-            appareils_connectes[i].send(o)
-            time.sleep(0.1)
+            #si != null on fait l'ordre
+            if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
+                appareils_connectes[i].send('\x00')  
+                appareils_connectes[i].send('\x02') 
+                timeout_start = time.time()
+                while time.time() < timeout_start + temps:
+                    if ordre[i][o] == "avancer":
+                        appareils_connectes[i].send("\x01")
+                        time.sleep(0.1)
+                    elif ordre[i][o] == "reculer":
+                        appareils_connectes[i].send("\x03")
+                        time.sleep(0.1)
+                    elif ordre[i][o] == "avancerDroite":
+                        appareils_connectes[i].send('\x07')  
+                        appareils_connectes[i].send("\x01")
+                        time.sleep(0.1)
+                    elif ordre[i][o] == "avancerGauche":
+                        appareils_connectes[i].send('\x05')  
+                        appareils_connectes[i].send("\x01")
+                        time.sleep(0.1)
+                    elif ordre[i][o] == "reculerDroite":
+                        appareils_connectes[i].send('\x07')  
+                        appareils_connectes[i].send("\x03")
+                        time.sleep(0.1)
+                    elif ordre[i][o] == "reculerGauche":
+                        appareils_connectes[i].send('\x05') 
+                        appareils_connectes[i].send("\x03")
+                        time.sleep(0.1)
 
         
 ###########################################################################
@@ -647,4 +680,4 @@ root.bind('<space>', stop_all)
 
 ###########################################################################
 if __name__ == "__main__":
-    multicar(["\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04","\x01","\x01","\x01","\x02","\x03","\x03","\x03","\x04"])
+    multicar([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],0.5,5)
