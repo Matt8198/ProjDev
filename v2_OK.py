@@ -182,13 +182,12 @@ def multicar(ordre,temps,vitesse):
 
 
     for o in range(maxi):
-        for i in range(len(appareils_connectes)):
-            #si != null on fait l'ordre
-            if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
-                appareils_connectes[i].send('\x00')  
-                appareils_connectes[i].send('\x02') 
-                timeout_start = time.time()
-                while time.time() < timeout_start + temps:
+        timeout_start = time.time()
+        while time.time() < timeout_start + temps:
+            for i in range(len(appareils_connectes)):
+                if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
+                    appareils_connectes[i].send('\x00')  
+                    appareils_connectes[i].send('\x02') 
                     if ordre[i][o] == "avancer":
                         appareils_connectes[i].send("\x01")
                         time.sleep(0.1)
@@ -680,4 +679,4 @@ root.bind('<space>', stop_all)
 
 ###########################################################################
 if __name__ == "__main__":
-    multicar([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],0.5,5)
+    multicar([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],2,5)
