@@ -4,7 +4,7 @@ import time
 from copy import deepcopy
 from tkinter import *
 import tkinter.ttk as ttk 
-from bluetooth import *
+from BluetoothClass import * 
 
 # Initialise n emplacements pour des sockets Bluetooth
 appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
@@ -14,31 +14,6 @@ app_1 = ""
 app_2 = ""
 app_3 = ""
 apps=[app_1, app_2, app_3]
-
-# Créé une socket Bluetooth
-class Bluetooth :
-
-    def __init__(self):
-        self.socket = BluetoothSocket(RFCOMM)
-
-    def connect(self, macaddr):
-        self.socket.connect((macaddr, 1))
-        print("Voiture connectée !")
-
-    def send(self, ordre):
-        self.socket.send(ordre)
-
-    # Arrete la connexion Bluetooth
-    def close(self, selectedCar):
-        try :
-            print("Appareils AVANT SUPPR : ", appareils_connectes)
-            self.socket.close() # Ferme la socket de communication
-            # TODO : Vérifier qu'on ferme bien la bonne socket !!
-            #appareils_connectes[selectedCar].close()
-            appareils_connectes[selectedCar] = None  # Supprime la voiture des appareils connectés
-            print("Appareils APRES SUPPR : ", appareils_connectes)
-        except OSError :
-            print("Erreur de déconnexion !")
 
 # Une socket Bluetooth
 def connectNewDevice(macaddr, selectedCar) :
@@ -111,13 +86,15 @@ def f_connect():
             text_state_car.set('Please enable Bluetooth on your laptop !')
 
         if (car != []):
-            text_state_car.set(car[1] +' detected')
-            # Enregistre la socket associée à la voiture connectée
-            connectNewDevice(macaddr, selectedCar)  # passe le numéro de la voiture (indice de la liste de choix)
-            text_state_car.set("Connection successful")
-            devices_connected(car[1])
-            appareils_connectes[selectedCar]=(car[1])
-    print(appareils_connectes)
+             # Enregistre la socket associée à la voiture connectée
+            new_sock = Bluetooth()
+            try :
+                new_sock.connect(macaddr)
+                appareils_connectes[selectedCar] = new_sock  # passe le numéro de la voiture (indice de la liste de choix)
+            except OSError:
+                # Gère une erreur de connexion, si on désactive le bluetooth après le scan
+                print("Connection ERROR ! Device is not ON/available")
+    print("Les appareils connectes :",appareils_connectes)
 
 #Affichage appareils connectés
 def devices_connected(car):
@@ -131,87 +108,6 @@ def devices_connected(car):
     app_connect_2.pack(anchor="n")
     app_connect_3.pack(anchor="n")
 
-###########################################################################
-###########################################################################
-
-def multicar(ordre,temps,vitesse):
-    appareilsDispo = []
-    
-    appareilsDetectes = discover_devices(lookup_names=True, duration=2)
-    print("appareilsDetectes =", appareilsDetectes)
-
-    #On récupère toutes les Beewi dispo
-    if appareilsDispo == [] :
-        #La liste des appareils PROCHES
-        for _mac, _name in appareilsDetectes:
-            # Filtre seulement les appareils "beewi"
-            if "beewi" in _name.lower():
-                print(_mac, " ", _name)
-                appareilsDispo.append((_mac, _name))
-                
-    appareils_connectes = [None]*len(appareilsDispo)
-    print("dispo",appareilsDispo)
-    #On connecte toutes les Beewi
-    for i in range(len(appareilsDispo)):
-        selectedCar=i
-        if selectedCar != -1 : 
-            try :
-                car = appareilsDispo[selectedCar]
-                # Connexion à la voiture
-                macaddr = car[0]
-            except IndexError:  # outofbounds
-                print('Please enable Bluetooth on your laptop !')
-
-            if (car != []):
-                # Enregistre la socket associée à la voiture connectée
-                new_sock = Bluetooth()
-                try :
-                    new_sock.connect(macaddr)
-                    appareils_connectes[selectedCar] = new_sock  # passe le numéro de la voiture (indice de la liste de choix)
-                except OSError:
-                    # Gère une erreur de connexion, si on désactive le bluetooth après le scan
-                    print("Connection ERROR ! Device is not ON/available")
-                
-
-    print("la liste",appareils_connectes)
-    #Prendre la liste la plus grande comme repere
-    maxi = 0
-    for i in (ordre):
-        if len(i)>maxi:
-            maxi = len(i)
-
-
-    for o in range(maxi):
-        timeout_start = time.time()
-        while time.time() < timeout_start + temps:
-            for i in range(len(appareils_connectes)):
-                if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
-                    appareils_connectes[i].send('\x00')  
-                    appareils_connectes[i].send('\x02') 
-                    if ordre[i][o] == "avancer":
-                        appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
-                    elif ordre[i][o] == "reculer":
-                        appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
-                    elif ordre[i][o] == "avancerDroite":
-                        appareils_connectes[i].send('\x07')  
-                        appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
-                    elif ordre[i][o] == "avancerGauche":
-                        appareils_connectes[i].send('\x05')  
-                        appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
-                    elif ordre[i][o] == "reculerDroite":
-                        appareils_connectes[i].send('\x07')  
-                        appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
-                    elif ordre[i][o] == "reculerGauche":
-                        appareils_connectes[i].send('\x05') 
-                        appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
-
-        
 ###########################################################################
 ###########################################################################
 
@@ -675,8 +571,5 @@ root.bind('<s>', move_backward)
 root.bind('<space>', stop_all)
  
 # Affichage de l'interface graphique
-# mainloop()
+mainloop()
 
-###########################################################################
-if __name__ == "__main__":
-    multicar([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],2,5)
