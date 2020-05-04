@@ -484,7 +484,7 @@ def appelOrdre():
 # Tkinter
 root = Tk()
 root.title('Control Interface')
-largeur = 750
+largeur = 900
 hauteur = 550
 root.geometry('' + str(largeur) + 'x' + str(hauteur))
 #root.maxsize(largeur, hauteur)
@@ -572,6 +572,10 @@ fleches_arriere.pack(anchor="center",side=TOP)
 frame_annexes = Frame(frame_fleches, height=150, width=100)
 frame_annexes.pack(anchor="center",side=TOP)
 
+# Frame pour les commandes en parallèle
+frame_parallele = Frame(frame_fleches, height=150, width=100)
+frame_parallele.pack(anchor="center",side=TOP)
+
 # Boutons de contrôle de l'interface graphique
 fleche_gauche = Button(fleches_avance, text='←', command = lambda: forward_to_left(''), width=3 , height=3)
 fleche_gauche.pack(side=LEFT)
@@ -590,20 +594,13 @@ btn_stop.pack(side=LEFT)
 btn_rec = Checkbutton(frame_annexes, variable=varRec, text='REC', command = write_rec, width=3 , height=3, indicatoron=0)
 btn_rec.pack(side=LEFT)
 
-#Boutons pour les ordres en simultanées
-# btn_multicar = Button(frame_annexes, text='Connexion Multicar', command=multicar, width=6 , height=3)
-# btn_multicar.pack(side=LEFT)
-# btn_rec_ordre = Checkbutton(frame_annexes, variable=ordreRec, text='REC_Ordre', command = write_rec_ordre, width=3 , height=3, indicatoron=0)
-# btn_rec_ordre.pack(side=LEFT)
-# btn_multicar = Button(frame_annexes, text='Lancement Multicar', command=appelOrdre, width=6 , height=3)
-# btn_multicar.pack(side=LEFT)
-# indication_nom=Label(frame_annexes, text="Saisissez votre temps" )
-# indication_nom.pack()
-# temps_label=StringVar()
-# saisir_nom=Entry(frame_annexes, textvariable=temps_label, width=50)
-# saisir_nom.pack()
-
-
+# Boutons pour les ordres en simultanées
+btn_multicar = Button(frame_parallele, text='Connexion Multicar', command=multicar, height=3).pack(side=LEFT)
+btn_rec_ordre = Checkbutton(frame_parallele, variable=ordreRec, text='REC Ordre', command = write_rec_ordre, height=3, indicatoron=0).pack(side=LEFT)
+btn_multicar = Button(frame_parallele, text='Lancement Multicar', command=appelOrdre, height=3).pack(side=LEFT)
+indication_nom = Label(frame_parallele, text="Temps" ).pack()
+temps_label = StringVar()
+saisir_nom = Entry(frame_parallele, textvariable=temps_label, width=5).pack()
 
 #Frame pour démos et appareils connectés
 frame_demos_et_appareils = Frame(mid,height = 150, width=180, background="gray7")
