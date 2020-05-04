@@ -60,26 +60,21 @@ def multicar(ordre,temps,vitesse):
                     appareils_connectes[i].send('\x02') 
                     if ordre[i][o] == "avancer":
                         appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
                     elif ordre[i][o] == "reculer":
                         appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
                     elif ordre[i][o] == "avancerDroite":
                         appareils_connectes[i].send('\x07')  
                         appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
                     elif ordre[i][o] == "avancerGauche":
                         appareils_connectes[i].send('\x05')  
                         appareils_connectes[i].send("\x01")
-                        time.sleep(0.1)
                     elif ordre[i][o] == "reculerDroite":
                         appareils_connectes[i].send('\x07')  
                         appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
                     elif ordre[i][o] == "reculerGauche":
                         appareils_connectes[i].send('\x05') 
                         appareils_connectes[i].send("\x03")
-                        time.sleep(0.1)
+                    time.sleep(0.1)
 
 
 

@@ -7,8 +7,11 @@ import tkinter.ttk as ttk
 from BluetoothClass import * 
 
 # Initialise n emplacements pour des sockets Bluetooth
-appareils_connectes = [None] * 3  # 3 Voitures simultannées au maximum
+appareils_connectes = [None] * 2  # 3 Voitures simultannées au maximum
 macro_rec = []
+ordre=[]
+ordre_rec = []
+drapeau_multicar = False
 #Initialise les noms des appreils connectés
 app_1 = ""
 app_2 = ""
@@ -180,6 +183,8 @@ def move_forward(event):
     try :
         if (varRec.get()):
             macro_rec.append(1)
+        elif (ordreRec.get()):
+            ordre_rec.append("avancer")
         else:
             appareils_connectes[selectedCar].send('\x01')  # Avance en ligne droite
             sv.set('Forward\n' + sv.get())  
@@ -193,6 +198,8 @@ def move_backward(event):
     try:
         if (varRec.get()):
             macro_rec.append(2)
+        elif (ordreRec.get()):
+            ordre_rec.append("reculer")
         else:
             appareils_connectes[selectedCar].send('\x03')  # Recule en ligne droite
             sv.set('Backward\n' + sv.get())
@@ -207,6 +214,8 @@ def forward_to_left(event):
     try:
         if (varRec.get()):
             macro_rec.append(3)
+        elif (ordreRec.get()):
+            ordre_rec.append("avancerGauche")
         else:
             appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
             appareils_connectes[selectedCar].send('\x01')  # Avance
@@ -221,6 +230,8 @@ def forward_to_right(event):
     try:
         if (varRec.get()):
             macro_rec.append(4)
+        elif (ordreRec.get()):
+            ordre_rec.append("AvancerDroite")
         else:
             appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
             appareils_connectes[selectedCar].send('\x01')  # Avance
@@ -235,6 +246,8 @@ def backward_to_left(event):
     try:
         if (varRec.get()):
             macro_rec.append(5)
+        elif (ordreRec.get()):
+            ordre_rec.append("reculerGauche")
         else:
             appareils_connectes[selectedCar].send('\x05')  # Tourne à gauche
             appareils_connectes[selectedCar].send('\x03')  # Recule
@@ -249,6 +262,8 @@ def backward_to_right(event):
     try:
         if (varRec.get()):
             macro_rec.append(6)
+        elif (ordreRec.get()):
+            ordre_rec.append("reculerDroite")
         else:
             appareils_connectes[selectedCar].send('\x07')  # Tourne à droite
             appareils_connectes[selectedCar].send('\x03')  # Recule
@@ -364,6 +379,106 @@ def read_rec(event,macro):
             backward_to_right(event)
         time.sleep(1)        
 
+def write_rec_ordre():
+    global ordre_rec
+    if (ordreRec.get()):
+        print("BEGIN ORDRE : REC")
+    else:
+        print("END ORDRE: REC")
+        print(ordre_rec)
+        ordre.append(ordre_rec)
+        ordre_rec = []
+
+###########################################################################
+# Fonction pour contrôler en simultanée
+def multicar():
+    global appareils_connectes
+    appareilsDispo = []
+    appareilsDetectes = discover_devices(lookup_names=True, duration=2)
+    print("appareilsDetectes =", appareilsDetectes)
+
+    #On récupère toutes les Beewi dispo
+    if appareilsDispo == [] :
+        #La liste des appareils PROCHES
+        for _mac, _name in appareilsDetectes:
+            # Filtre seulement les appareils "beewi"
+            if "beewi" in _name.lower():
+                print(_mac, " ", _name)
+                appareilsDispo.append((_mac, _name))
+                
+    # appareils_connectes = [None]*len(appareilsDispo)
+    print("dispo",appareilsDispo)
+
+    #On connecte toutes les Beewi
+    for i in range(len(appareilsDispo)):
+        selectedCar=i
+        if selectedCar != -1 : 
+            try :
+                car = appareilsDispo[selectedCar]
+                # Connexion à la voiture
+                macaddr = car[0]
+            except IndexError:  # outofbounds
+                print('Please enable Bluetooth on your laptop !')
+
+            if (car != []):
+                # Enregistre la socket associée à la voiture connectée
+                new_sock = Bluetooth()
+                try :
+                    new_sock.connect(macaddr)
+                    print(macaddr+' est connecté')
+                    appareils_connectes[selectedCar] = new_sock  # passe le numéro de la voiture (indice de la liste de choix)
+                except OSError:
+                    # Gère une erreur de connexion, si on désactive le bluetooth après le scan
+                    print("Connection ERROR ! Device is not ON/available")
+                
+
+    print("Appareils Connectés",appareils_connectes)
+    print("Il vous faut faire "+ str(len(appareils_connectes)) + " listes d'ordres")
+    ##################################################################
+
+    ##################################################################
+def appelOrdre():
+    global ordre
+    global appareils_connectes
+    #Prendre la liste la plus grande comme repere
+    if len(ordre)==len(appareils_connectes):
+        maxi = 0
+        for i in (ordre):
+            if len(i)>maxi:
+                maxi = len(i)
+        
+        temps = temps_label.get()
+        
+        #On boucle sur le nombre d'ordre maximal sur une liste
+        for o in range(maxi):
+            timeout_start = time.time()
+            #On met une contrainte de temps
+            while time.time() < timeout_start + int(temps):
+                #On fait l'ordre demandés pour toutes les voitures
+                for i in range(len(appareils_connectes)):
+                    if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
+                        appareils_connectes[i].send('\x00')  
+                        appareils_connectes[i].send('\x02') 
+                        if ordre[i][o] == "avancer":
+                            appareils_connectes[i].send("\x01")
+                        elif ordre[i][o] == "reculer":
+                            appareils_connectes[i].send("\x03")
+                        elif ordre[i][o] == "avancerDroite":
+                            appareils_connectes[i].send('\x07')  
+                            appareils_connectes[i].send("\x01")
+                        elif ordre[i][o] == "avancerGauche":
+                            appareils_connectes[i].send('\x05')  
+                            appareils_connectes[i].send("\x01")
+                        elif ordre[i][o] == "reculerDroite":
+                            appareils_connectes[i].send('\x07')  
+                            appareils_connectes[i].send("\x03")
+                        elif ordre[i][o] == "reculerGauche":
+                            appareils_connectes[i].send('\x05') 
+                            appareils_connectes[i].send("\x03")
+                        time.sleep(0.1)
+        ordre=[]
+    else:
+        print("probleme, nous avons pas autant de liste d'ordres que de voitures")
 
 ###########################################################################
 # Tkinter
@@ -432,6 +547,9 @@ sv = StringVar()
 # Variable entiere pour l'enregistrement
 varRec = IntVar()
 
+# Variable entiere pour l'enregistrement d'ordre en simultanées simultanées
+ordreRec=IntVar()
+
 # Historique des commandes
 historique = Label(mid, textvariable=sv, font='Helvetica 12 ', fg='red', bg='steel blue',anchor=NW, width=20, height=15)
 #scroll = Scrollbar(historique, orient='vertical')
@@ -471,6 +589,20 @@ btn_stop = Button(frame_annexes, text='STOP', command = lambda: stop_all(''), wi
 btn_stop.pack(side=LEFT)
 btn_rec = Checkbutton(frame_annexes, variable=varRec, text='REC', command = write_rec, width=3 , height=3, indicatoron=0)
 btn_rec.pack(side=LEFT)
+
+#Boutons pour les ordres en simultanées
+# btn_multicar = Button(frame_annexes, text='Connexion Multicar', command=multicar, width=6 , height=3)
+# btn_multicar.pack(side=LEFT)
+# btn_rec_ordre = Checkbutton(frame_annexes, variable=ordreRec, text='REC_Ordre', command = write_rec_ordre, width=3 , height=3, indicatoron=0)
+# btn_rec_ordre.pack(side=LEFT)
+# btn_multicar = Button(frame_annexes, text='Lancement Multicar', command=appelOrdre, width=6 , height=3)
+# btn_multicar.pack(side=LEFT)
+# indication_nom=Label(frame_annexes, text="Saisissez votre temps" )
+# indication_nom.pack()
+# temps_label=StringVar()
+# saisir_nom=Entry(frame_annexes, textvariable=temps_label, width=50)
+# saisir_nom.pack()
+
 
 
 #Frame pour démos et appareils connectés
@@ -572,4 +704,5 @@ root.bind('<space>', stop_all)
  
 # Affichage de l'interface graphique
 mainloop()
+
 
