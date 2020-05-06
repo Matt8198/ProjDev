@@ -1,7 +1,7 @@
 from BluetoothClass import * 
 import time 
 
-def multicar(ordre,temps,vitesse):
+def parallele(ordre,temps,vitesse):
     appareilsDispo = []
     
     appareilsDetectes = discover_devices(lookup_names=True, duration=2)
@@ -76,8 +76,6 @@ def multicar(ordre,temps,vitesse):
                         appareils_connectes[i].send("\x03")
                     time.sleep(0.1)
 
-
-
 ###########################################################################
 if __name__ == "__main__":
-    multicar([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],2,5)
+    parallele([["avancer","avancerDroite","reculer"],["avancerDroite","avancerGauche"]],2,5)

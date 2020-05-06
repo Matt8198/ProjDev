@@ -8,6 +8,7 @@ from BluetoothClass import *
 
 # Initialise n emplacements pour des sockets Bluetooth
 appareils_connectes = [None] * 2  # 3 Voitures simultannées au maximum
+appareils_connectes_parallele=[]
 macro_rec = []
 ordre=[]
 ordre_rec = []
@@ -390,9 +391,10 @@ def write_rec_ordre():
         ordre_rec = []
 
 ###########################################################################
-# Fonction pour contrôler en simultanée
-def multicar():
-    global appareils_connectes
+# Fonction pour connecté toutes les beewi disponible
+def connexion_parallele():
+    global appareils_connectes_parallele
+    appareils_connectes_parallele=[]
     appareilsDispo = []
     appareilsDetectes = discover_devices(lookup_names=True, duration=2)
     print("appareilsDetectes =", appareilsDetectes)
@@ -406,7 +408,6 @@ def multicar():
                 print(_mac, " ", _name)
                 appareilsDispo.append((_mac, _name))
                 
-    # appareils_connectes = [None]*len(appareilsDispo)
     print("dispo",appareilsDispo)
 
     #On connecte toutes les Beewi
@@ -426,22 +427,24 @@ def multicar():
                 try :
                     new_sock.connect(macaddr)
                     print(macaddr+' est connecté')
-                    appareils_connectes[selectedCar] = new_sock  # passe le numéro de la voiture (indice de la liste de choix)
+                    appareils_connectes_parallele.append(new_sock)  # passe le numéro de la voiture (indice de la liste de choix)
                 except OSError:
                     # Gère une erreur de connexion, si on désactive le bluetooth après le scan
                     print("Connection ERROR ! Device is not ON/available")
                 
 
-    print("Appareils Connectés",appareils_connectes)
-    print("Il vous faut faire "+ str(len(appareils_connectes)) + " listes d'ordres")
-    ##################################################################
+    print("Appareils Connectés",appareils_connectes_parallele)
+    print("Il vous faut faire "+ str(len(appareils_connectes_parallele)) + " listes d'ordres")
+##################################################################
 
-    ##################################################################
-def appelOrdre():
+##################################################################
+#Fonction pour appeler les ordres que l'on a crée.
+def lancement_parallele():
     global ordre
-    global appareils_connectes
+    global appareils_connectes_parallele
+
     #Prendre la liste la plus grande comme repere
-    if len(ordre)==len(appareils_connectes):
+    if len(ordre)==len(appareils_connectes_parallele):
         maxi = 0
         for i in (ordre):
             if len(i)>maxi:
@@ -453,32 +456,32 @@ def appelOrdre():
         for o in range(maxi):
             timeout_start = time.time()
             #On met une contrainte de temps
-            while time.time() < timeout_start + int(temps):
+            while time.time() < timeout_start + float(temps):
                 #On fait l'ordre demandés pour toutes les voitures
-                for i in range(len(appareils_connectes)):
-                    if o <= len(ordre[i])-1 and appareils_connectes[i]!=None:
-                        appareils_connectes[i].send('\x00')  
-                        appareils_connectes[i].send('\x02') 
+                for i in range(len(appareils_connectes_parallele)):
+                    if o <= len(ordre[i])-1 and appareils_connectes_parallele[i]!=None:
+                        appareils_connectes_parallele[i].send('\x00')  
+                        appareils_connectes_parallele[i].send('\x02') 
                         if ordre[i][o] == "avancer":
-                            appareils_connectes[i].send("\x01")
+                            appareils_connectes_parallele[i].send("\x01")
                         elif ordre[i][o] == "reculer":
-                            appareils_connectes[i].send("\x03")
+                            appareils_connectes_parallele[i].send("\x03")
                         elif ordre[i][o] == "avancerDroite":
-                            appareils_connectes[i].send('\x07')  
-                            appareils_connectes[i].send("\x01")
+                            appareils_connectes_parallele[i].send('\x07')  
+                            appareils_connectes_parallele[i].send("\x01")
                         elif ordre[i][o] == "avancerGauche":
-                            appareils_connectes[i].send('\x05')  
-                            appareils_connectes[i].send("\x01")
+                            appareils_connectes_parallele[i].send('\x05')  
+                            appareils_connectes_parallele[i].send("\x01")
                         elif ordre[i][o] == "reculerDroite":
-                            appareils_connectes[i].send('\x07')  
-                            appareils_connectes[i].send("\x03")
+                            appareils_connectes_parallele[i].send('\x07')  
+                            appareils_connectes_parallele[i].send("\x03")
                         elif ordre[i][o] == "reculerGauche":
-                            appareils_connectes[i].send('\x05') 
-                            appareils_connectes[i].send("\x03")
+                            appareils_connectes_parallele[i].send('\x05') 
+                            appareils_connectes_parallele[i].send("\x03")
                         time.sleep(0.1)
         ordre=[]
     else:
-        print("probleme, nous avons pas autant de liste d'ordres que de voitures")
+        print("Problème, nous avons pas autant de liste d'ordres que de voitures. Il vous en faut "+ str(len(appareils_connectes_parallele))+", vous en avez "+str(len(ordre)))
 
 ###########################################################################
 # Tkinter
@@ -594,13 +597,13 @@ btn_stop.pack(side=LEFT)
 btn_rec = Checkbutton(frame_annexes, variable=varRec, text='REC', command = write_rec, width=3 , height=3, indicatoron=0)
 btn_rec.pack(side=LEFT)
 
-# Boutons pour les ordres en simultanées
-btn_multicar = Button(frame_parallele, text='Connexion Multicar', command=multicar, height=3).pack(side=LEFT)
+# Boutons pour les ordres en parallèle
+btn_multicar = Button(frame_parallele, text='Connexion Parallele', command=connexion_parallele, height=3).pack(side=LEFT)
 btn_rec_ordre = Checkbutton(frame_parallele, variable=ordreRec, text='REC Ordre', command = write_rec_ordre, height=3, indicatoron=0).pack(side=LEFT)
-btn_multicar = Button(frame_parallele, text='Lancement Multicar', command=appelOrdre, height=3).pack(side=LEFT)
-indication_nom = Label(frame_parallele, text="Temps" ).pack()
+btn_multicar = Button(frame_parallele, text='Lancement Parallele', command=lancement_parallele, height=3).pack(side=LEFT)
+indication_temps = Label(frame_parallele, text="Temps" ).pack()
 temps_label = StringVar()
-saisir_nom = Entry(frame_parallele, textvariable=temps_label, width=5).pack()
+saisir_temps = Entry(frame_parallele, textvariable=temps_label, width=5).pack()
 
 #Frame pour démos et appareils connectés
 frame_demos_et_appareils = Frame(mid,height = 150, width=180, background="gray7")
